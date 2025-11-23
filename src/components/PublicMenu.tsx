@@ -1,300 +1,341 @@
 import { useEffect, useState } from 'react';
+// Pastikan file MenuContext.tsx sudah dibuat di src/contexts/MenuContext.tsx
 import { useMenu } from '../contexts/MenuContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Globe, ShoppingCart, X, Plus, Minus, Send, ArrowLeft } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+// Import ikon dari lucide-react
+import { ShoppingCart, ArrowLeft, Search, ChefHat, X } from 'lucide-react';
+import { toast } from 'sonner';
 
-interface CartItem {
-  item: any;
-  quantity: number;
+// Tipe data untuk props
+interface PublicMenuProps {
+  onBack?: () => void;
 }
 
-export function PublicMenu({ onBack }: { onBack?: () => void }) {
-  const { menuItems, settings, trackView } = useMenu();
-  const { language, setLanguage, t } = useLanguage();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [showCart, setShowCart] = useState(false);
+export function PublicMenu({ onBack }: PublicMenuProps) {
+  const { menuItems, settings, trackView, isLoading } = useMenu();
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cart, setCart] = useState<{ id: string; quantity: number }[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  
+  // State Bahasa (Lokal)
+  const [language, setLanguage] = useState<'id' | 'en'>('id');
 
+  const toggleLanguage = () => {
+    const newLang = language === 'id' ? 'en' : 'id';
+    setLanguage(newLang);
+    toast.success(`Bahasa diganti ke ${newLang === 'id' ? 'Indonesia' : 'English'}`);
+  };
+  
   useEffect(() => {
     trackView();
   }, []);
 
-  const handleItemClick = (itemId: string) => {
-    trackView(itemId);
-  };
+  const categories = ['All', ...new Set(menuItems.map((item) => item.category))];
 
-  const categories = ['all', ...Array.from(new Set(menuItems.map((item) => item.category)))];
+  const filteredItems = menuItems.filter((item) => {
+    const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
-  const filteredItems =
-    selectedCategory === 'all' ? menuItems : menuItems.filter((item) => item.category === selectedCategory);
-
-  const sortedItems = [...filteredItems].sort((a, b) => a.order - b.order);
-
-  const addToCart = (item: any) => {
-    setCart((prev) => {
-      const existing = prev.find((cartItem) => cartItem.item.id === item.id);
+  const addToCart = (itemId: string) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === itemId);
       if (existing) {
-        return prev.map((cartItem) =>
-          cartItem.item.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
-        );
+        return prev.map(i => i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { item, quantity: 1 }];
+      return [...prev, { id: itemId, quantity: 1 }];
     });
+    trackView(itemId);
+    toast.success("Menu ditambahkan ke pesanan");
   };
 
-  const updateQuantity = (itemId: string, delta: number) => {
-    setCart((prev) => {
-      return prev
-        .map((cartItem) =>
-          cartItem.item.id === itemId ? { ...cartItem, quantity: cartItem.quantity + delta } : cartItem
-        )
-        .filter((cartItem) => cartItem.quantity > 0);
+  const cartTotal = cart.reduce((total, cartItem) => {
+    const item = menuItems.find(i => i.id === cartItem.id);
+    return total + (item ? item.price * cartItem.quantity : 0);
+  }, 0);
+
+  const formatCurrency = (amount: number) => {
+    const currencyCode = (settings as any).currency || 'IDR';
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const handleOrder = () => {
+    if (cart.length === 0) return;
+
+    let message = language === 'id' ? `Halo, saya ingin memesan:\n\n` : `Hello, I would like to order:\n\n`;
+    cart.forEach(cartItem => {
+      const item = menuItems.find(i => i.id === cartItem.id);
+      if (item) {
+        message += `${cartItem.quantity}x ${item.name} - ${formatCurrency(item.price * cartItem.quantity)}\n`;
+      }
     });
+    message += `\nTotal: ${formatCurrency(cartTotal)}`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const phone = (settings as any).phoneNumber || '6281234567890';
+    window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
   };
 
-  const totalAmount = cart.reduce((sum, cartItem) => sum + cartItem.item.price * cartItem.quantity, 0);
-
-  const sendWhatsAppOrder = () => {
-    const orderText = cart
-      .map(
-        (cartItem) =>
-          `${cartItem.quantity}x ${
-            language === 'id' ? cartItem.item.name : cartItem.item.nameEn || cartItem.item.name
-          } - Rp ${(cartItem.item.price * cartItem.quantity).toLocaleString('id-ID')}`
-      )
-      .join('\n');
-
-    const restaurantName =
-      language === 'id' ? settings.restaurantName : settings.restaurantNameEn || settings.restaurantName;
-
-    const message = `Halo ${restaurantName}, saya ingin memesan:\n\n${orderText}\n\nTotal: Rp ${totalAmount.toLocaleString(
-      'id-ID'
-    )}`;
-
-    const whatsappUrl = `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const getTemplate = () => {
-    switch (settings.template) {
-      case 'colorful':
-        return {
-          bg: 'bg-gradient-to-br from-pink-500 to-orange-500',
-          cardBg: 'bg-white/95',
-          headerText: 'text-white',
-          accentText: 'text-pink-600',
-          buttonBg: 'bg-gradient-to-r from-pink-500 to-orange-500',
-        };
-      case 'elegant':
-        return {
-          bg: 'bg-gradient-to-br from-gray-900 to-gray-800',
-          cardBg: 'bg-gray-800/95',
-          headerText: 'text-yellow-400',
-          accentText: 'text-yellow-400',
-          buttonBg: 'bg-yellow-500 text-gray-900',
-        };
-      case 'modern':
-        return {
-          bg: 'bg-gradient-to-br from-blue-600 to-cyan-500',
-          cardBg: 'bg-white/95',
-          headerText: 'text-white',
-          accentText: 'text-blue-600',
-          buttonBg: 'bg-blue-600',
-        };
-      default: // minimalist
-        return {
-          bg: 'bg-gray-50',
-          cardBg: 'bg-white',
-          headerText: 'text-gray-900',
-          accentText: 'text-orange-600',
-          buttonBg: 'bg-orange-500',
-        };
-    }
-  };
-
-  const theme = getTemplate();
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`min-h-screen ${theme.bg}`}>
-      {/* Header */}
-      <header className={`${theme.cardBg} shadow-lg sticky top-0 z-40`}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {onBack && (
-              <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
-                <ArrowLeft className="size-4" />
-                {t('Kembali', 'Back')}
-              </Button>
-            )}
-            <div className="flex-1 text-center">
-              <div className="inline-block px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm">
-                <h1 className={`text-2xl font-bold drop-shadow-lg`}>
-                  {language === 'id' ? settings.restaurantName : settings.restaurantNameEn || settings.restaurantName}
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLanguage(language === 'id' ? 'en' : 'id')}
-                className="gap-2"
-              >
-                <Globe className="size-4" />
-                {language === 'id' ? 'EN' : 'ID'}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setShowCart(true)}
-                className={`gap-2 ${theme.buttonBg}`}
-              >
-                <ShoppingCart className="size-4" />
-                {cart.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                  </Badge>
+    <div className="min-h-screen bg-gray-50 pb-32"> {/* Padding bawah diperbesar */}
+      
+      {/* Floating Header */}
+      <div className="bg-white shadow-md sticky top-0 z-20 transition-all">
+        <div className="container mx-auto px-4 py-4"> {/* Padding header ditambah */}
+          <div className="flex items-center gap-3 justify-between">
+            
+            <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                {/* TOMBOL BACK: JUMBO */}
+                {onBack && (
+                <button 
+                    onClick={onBack} 
+                    className="shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors active:scale-95 touch-manipulation border border-transparent"
+                    title="Kembali"
+                >
+                    <ArrowLeft className="h-7 w-7 text-gray-800" />
+                </button>
                 )}
-              </Button>
+
+                {/* Nama Restoran */}
+                <div className="flex-1 overflow-hidden">
+                <h1 className="text-xl font-bold text-gray-900 truncate leading-tight">
+                    {(settings as any).restaurantName || "Menu Restoran"}
+                </h1>
+                <p className="text-sm text-gray-500 truncate hidden sm:block">
+                    {language === 'id' ? 'Pilih menu favoritmu' : 'Choose your favorite menu'}
+                </p>
+                </div>
+            </div>
+
+            {/* GROUP TOMBOL KANAN */}
+            <div className="flex items-center gap-3 shrink-0">
+              {/* TOMBOL BAHASA */}
+              <button 
+                onClick={toggleLanguage}
+                className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-sm active:scale-95 touch-manipulation border border-gray-200"
+              >
+                {language === 'id' ? 'EN' : 'ID'}
+              </button>
+
+              {/* CART BUTTON */}
+              <button 
+                className="bg-orange-600 hover:bg-orange-700 text-white w-12 h-12 flex items-center justify-center rounded-full shadow-lg relative transition-colors active:scale-95 touch-manipulation"
+                onClick={() => setIsCartOpen(true)}
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[11px] font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white shadow-sm">
+                    {cart.reduce((a, b) => a + b.quantity, 0)}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Categories */}
-      <div className={`${theme.cardBg} shadow-sm sticky top-[73px] z-30`}>
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          {/* Search Bar */}
+          <div className="mt-4 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />
+            <input 
+              type="text"
+              placeholder={language === 'id' ? "Cari makanan..." : "Search food..."}
+              className="w-full pl-12 pr-4 h-14 bg-gray-100 border-none rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Categories */}
+          <div className="flex gap-3 overflow-x-auto pb-2 mt-5 no-scrollbar touch-pan-x">
             {categories.map((category) => (
-              <Button
+              <button
                 key={category}
-                variant={selectedCategory === category ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className={selectedCategory === category ? theme.buttonBg : ''}
+                onClick={() => setActiveCategory(category)}
+                className={`px-6 py-3 rounded-full text-base font-medium whitespace-nowrap transition-all active:scale-95 touch-manipulation ${
+                  activeCategory === category
+                    ? 'bg-gray-900 text-white shadow-lg shadow-gray-200'
+                    : 'bg-white border border-gray-200 text-gray-700'
+                }`}
               >
-                {category === 'all' ? t('Semua', 'All') : category}
-              </Button>
+                {category}
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Menu Items */}
-      <main className="container mx-auto px-4 py-6">
-        {sortedItems.length === 0 ? (
-          <Card className={`${theme.cardBg} p-12 text-center`}>
-            <p className="text-gray-500">{t('Belum ada menu tersedia', 'No menu items available')}</p>
-          </Card>
+      {/* Menu Grid */}
+      <div className="container mx-auto px-4 py-6">
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-20 text-gray-500">
+            <div className="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ChefHat className="h-16 w-16 text-gray-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Menu tidak ditemukan</h3>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedItems.map((item) => (
-              <Card
-                key={item.id}
-                className={`${theme.cardBg} overflow-hidden hover:shadow-xl transition-shadow cursor-pointer`}
-                onClick={() => handleItemClick(item.id)}
-              >
-                {item.image && (
-                  <ImageWithFallback src={item.image} alt={item.name} className="w-full h-48 object-cover" />
-                )}
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-gray-900">
-                      {language === 'id' ? item.name : item.nameEn || item.name}
-                    </h3>
-                    <Badge variant="secondary">{item.category}</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">
-                    {language === 'id' ? item.description : item.descriptionEn || item.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <p className={`font-semibold ${theme.accentText}`}>Rp {item.price.toLocaleString('id-ID')}</p>
-                    <Button
-                      size="sm"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        addToCart(item);
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredItems.map((item) => (
+              <div key={item.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+                
+                {/* Image Area */}
+                <div className="aspect-video relative bg-gray-100">
+                  {item.image ? (
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
                       }}
-                      className={theme.buttonBg}
-                    >
-                      <Plus className="size-4 mr-1" />
-                      {t('Tambah', 'Add')}
-                    </Button>
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <ChefHat className="h-16 w-16 opacity-20" />
+                    </div>
+                  )}
+                  <div className="absolute top-4 right-4">
+                    <span className="bg-white/95 backdrop-blur-md shadow-md font-bold text-gray-900 px-4 py-2 rounded-full text-base">
+                      {formatCurrency(item.price)}
+                    </span>
                   </div>
                 </div>
-              </Card>
+                
+                {/* Content Area */}
+                <div className="p-5 flex flex-col flex-grow">
+                  <div className="mb-3">
+                    <h3 className="font-bold text-gray-900 text-xl leading-tight mb-2 line-clamp-2 min-h-[3.5rem]">
+                      {item.name}
+                    </h3>
+                    <span className="inline-block text-[11px] font-bold uppercase tracking-wide text-orange-700 bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
+                      {item.category}
+                    </span>
+                  </div>
+                  
+                  <p className="text-base text-gray-500 line-clamp-3 mb-6 flex-grow leading-relaxed">
+                    {item.description}
+                  </p>
+
+                  {/* Tombol Tambah JUMBO (h-14 = 56px) */}
+                  <button 
+                    className="w-full h-14 rounded-2xl font-bold text-base transition-all active:scale-[0.98] touch-manipulation bg-orange-50 text-orange-700 hover:bg-orange-100 border-2 border-orange-100 hover:border-orange-200 flex items-center justify-center gap-2 mt-auto" 
+                    onClick={() => addToCart(item.id)}
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    {language === 'id' ? 'Tambah Pesanan' : 'Add to Order'}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
-      </main>
+      </div>
 
-      {/* Cart Sidebar */}
-      {showCart && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex justify-end">
-          <div className="bg-white w-full max-w-md h-full overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
-              <h2 className="text-xl font-semibold">{t('Pesanan Anda', 'Your Order')}</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowCart(false)}>
-                <X className="size-5" />
-              </Button>
+      {/* Cart Summary */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-6 left-4 right-4 z-30 safe-area-bottom">
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className="w-full bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between active:scale-95 transition-transform touch-manipulation"
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-orange-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 border-gray-900">
+                {cart.reduce((a, b) => a + b.quantity, 0)}
+              </div>
+              <div className="text-left">
+                <p className="text-sm text-gray-400 font-medium">
+                  {language === 'id' ? 'Total Pembayaran' : 'Total Payment'}
+                </p>
+                <p className="text-2xl font-bold text-white leading-none mt-0.5">{formatCurrency(cartTotal)}</p>
+              </div>
             </div>
+            <div className="bg-white/10 px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2">
+              {language === 'id' ? 'Lihat' : 'View'}
+              <ArrowLeft className="w-4 h-4 rotate-180" />
+            </div>
+          </button>
+        </div>
+      )}
 
-            <div className="p-4">
-              {cart.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <ShoppingCart className="size-12 mx-auto mb-3 text-gray-300" />
-                  <p>{t('Keranjang kosong', 'Cart is empty')}</p>
+      {/* Cart Modal */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div className="flex items-center justify-between p-6 border-b">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {language === 'id' ? 'Pesanan Anda' : 'Your Order'}
+                    </h2>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {cart.map((cartItem) => (
-                    <Card key={cartItem.item.id} className="p-4">
-                      <div className="flex gap-3">
-                        {cartItem.item.image && (
-                          <ImageWithFallback
-                            src={cartItem.item.image}
-                            alt={cartItem.item.name}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {language === 'id' ? cartItem.item.name : cartItem.item.nameEn || cartItem.item.name}
-                          </h3>
-                          <p className="text-sm text-orange-600">Rp {cartItem.item.price.toLocaleString('id-ID')}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Button size="sm" variant="outline" onClick={() => updateQuantity(cartItem.item.id, -1)}>
-                              <Minus className="size-3" />
-                            </Button>
-                            <span className="font-medium">{cartItem.quantity}</span>
-                            <Button size="sm" variant="outline" onClick={() => updateQuantity(cartItem.item.id, 1)}>
-                              <Plus className="size-3" />
-                            </Button>
-                          </div>
+                <button onClick={() => setIsCartOpen(false)} className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 active:scale-95">
+                    <X className="w-7 h-7 text-gray-600" />
+                </button>
+            </div>
+          
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {cart.length === 0 ? (
+                <div className="text-center py-10">
+                    <p className="text-gray-500 font-medium text-lg">Kosong</p>
+                </div>
+                ) : (
+                cart.map((cartItem) => {
+                    const item = menuItems.find(i => i.id === cartItem.id);
+                    if (!item) return null;
+                    return (
+                    <div key={cartItem.id} className="flex justify-between items-center pb-4 border-b border-dashed border-gray-100 last:border-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-lg font-bold text-gray-700">
+                                {cartItem.quantity}x
+                            </div>
+                            <div>
+                                <p className="font-bold text-gray-900 text-lg">{item.name}</p>
+                                <p className="text-sm text-gray-500">{formatCurrency(item.price)}</p>
+                            </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
-
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-semibold">Total:</span>
-                      <span className="text-xl font-bold text-orange-600">
-                        Rp {totalAmount.toLocaleString('id-ID')}
-                      </span>
+                        <p className="font-bold text-gray-900 text-lg">{formatCurrency(item.price * cartItem.quantity)}</p>
                     </div>
-                    <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" onClick={sendWhatsAppOrder}>
-                      <Send className="size-4" />
-                      {t('Pesan via WhatsApp', 'Order via WhatsApp')}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                    );
+                })
+                )}
             </div>
+
+            {cart.length > 0 && (
+                <div className="p-6 bg-gray-50 border-t">
+                    <div className="flex justify-between items-center mb-6">
+                        <span className="text-gray-600 font-bold text-lg">Total</span>
+                        <span className="font-bold text-3xl text-orange-600">{formatCurrency(cartTotal)}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <button 
+                            onClick={handleOrder} 
+                            className="w-full h-16 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xl shadow-xl shadow-green-200 active:scale-[0.98] flex items-center justify-center gap-3"
+                        >
+                            {language === 'id' ? 'Pesan via WhatsApp' : 'Order via WhatsApp'}
+                        </button>
+                        <button 
+                            onClick={() => setCart([])} 
+                            className="w-full h-14 rounded-2xl border-2 border-gray-200 font-bold text-gray-500 hover:bg-white active:scale-[0.98]"
+                        >
+                            Kosongkan
+                        </button>
+                    </div>
+                </div>
+            )}
           </div>
         </div>
       )}

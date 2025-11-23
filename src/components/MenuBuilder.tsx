@@ -1,375 +1,313 @@
 import { useState } from 'react';
 import { useMenu } from '../contexts/MenuContext';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Card } from './ui/card';
-import { Label } from './ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Plus, Pencil, Trash2, GripVertical, Loader } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { MenuItem } from '../contexts/MenuContext';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { 
+  Plus, 
+  Trash2, 
+  Image as ImageIcon, 
+  Pencil, 
+  Loader2,
+  X 
+} from 'lucide-react';
 import { toast } from 'sonner';
 
-interface MenuItemFormData {
-  name: string;
-  nameEn: string;
-  price: string;
-  description: string;
-  descriptionEn: string;
-  category: string;
-  image: string;
-}
-
-function SortableMenuItem({ item, onEdit, onDelete }: { item: MenuItem; onEdit: () => void; onDelete: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <Card ref={setNodeRef} style={style} className="p-4">
-      <div className="flex items-start gap-4">
-        <button className="mt-2 cursor-grab active:cursor-grabbing touch-none" {...attributes} {...listeners}>
-          <GripVertical className="size-5 text-gray-400" />
-        </button>
-
-        {item.image && (
-          <ImageWithFallback src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
-        )}
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{item.name}</h3>
-              {item.nameEn && <p className="text-sm text-gray-500">{item.nameEn}</p>}
-              <p className="text-orange-600 font-semibold mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onEdit}>
-                <Pencil className="size-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={onDelete}>
-                <Trash2 className="size-4 text-red-500" />
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mt-2">{item.description}</p>
-          {item.descriptionEn && <p className="text-sm text-gray-500 mt-1 italic">{item.descriptionEn}</p>}
-          <span className="inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
-            {item.category}
-          </span>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 export function MenuBuilder() {
-  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, reorderMenuItems, isLoading, error } = useMenu();
+  const { menuItems, addMenuItem, deleteMenuItem, updateMenuItem, isLoading } = useMenu();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<MenuItemFormData>({
+
+  // Form State
+  const [formData, setFormData] = useState({
     name: '',
-    nameEn: '',
     price: '',
     description: '',
-    descriptionEn: '',
-    category: '',
-    image: '',
+    category: 'Main Course',
+    image: ''
   });
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const categories = Array.from(new Set(menuItems.map((item) => item.category))).filter(Boolean);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const itemData = {
-      name: formData.name,
-      nameEn: formData.nameEn || undefined,
-      price: parseFloat(formData.price) || 0,
-      description: formData.description,
-      descriptionEn: formData.descriptionEn || undefined,
-      category: formData.category,
-      image: formData.image || undefined,
-    };
-
-    setIsSaving(true);
-
-    const operation = editingItem ? updateMenuItem(editingItem.id, itemData) : addMenuItem(itemData);
-
-    operation
-      .then(() => {
-        toast.success(editingItem ? 'Menu updated successfully' : 'Menu added successfully');
-        setIsDialogOpen(false);
-        resetForm();
-      })
-      .catch((err) => {
-        toast.error(editingItem ? 'Failed to update menu' : 'Failed to add menu');
-        console.error(err);
-      })
-      .finally(() => {
-        setIsSaving(false);
-      });
-  };
 
   const resetForm = () => {
     setFormData({
       name: '',
-      nameEn: '',
       price: '',
       description: '',
-      descriptionEn: '',
-      category: '',
-      image: '',
+      category: 'Main Course',
+      image: ''
     });
-    setEditingItem(null);
+    setIsEditing(false);
+    setEditingId(null);
   };
 
-  const handleEdit = (item: MenuItem) => {
-    setEditingItem(item);
+  const handleEdit = (item: any) => {
     setFormData({
       name: item.name,
-      nameEn: item.nameEn || '',
       price: item.price.toString(),
       description: item.description,
-      descriptionEn: item.descriptionEn || '',
       category: item.category,
-      image: item.image || '',
+      image: item.image || ''
     });
+    setIsEditing(true);
+    setEditingId(item.id);
     setIsDialogOpen(true);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
 
-    if (over && active.id !== over.id) {
-      const oldIndex = menuItems.findIndex((item) => item.id === active.id);
-      const newIndex = menuItems.findIndex((item) => item.id === over.id);
-      const reordered = arrayMove(menuItems, oldIndex, newIndex);
+    try {
+      const menuData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        category: formData.category,
+        image: formData.image
+      };
 
-      reorderMenuItems(reordered).catch((err) => {
-        toast.error('Failed to reorder menu items');
-        console.error(err);
-      });
+      if (isEditing && editingId) {
+        await updateMenuItem(editingId, menuData);
+        toast.success('Menu berhasil diperbarui');
+      } else {
+        await addMenuItem(menuData);
+        toast.success('Menu berhasil ditambahkan');
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error('Gagal menyimpan menu');
+      console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const sortedMenuItems = [...menuItems].sort((a, b) => a.order - b.order);
+  const handleDelete = async (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus menu ini?')) {
+      try {
+        await deleteMenuItem(id);
+        toast.success('Menu dihapus');
+      } catch (error) {
+        toast.error('Gagal menghapus menu');
+      }
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Menu Items</h2>
-            <p className="text-sm text-gray-600 mt-1">Tambah, edit, atau drag untuk mengatur urutan menu</p>
-            {error && <p className="text-sm text-red-600 mt-2">Warning: {error}</p>}
-          </div>
-          <Dialog
-            open={isDialogOpen}
-            onOpenChange={(open: boolean) => {
-              setIsDialogOpen(open);
-              if (!open) resetForm();
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button className="gap-2" disabled={isLoading || isSaving}>
-                <Plus className="size-4" />
-                Tambah Menu
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingItem ? 'Edit Menu Item' : 'Tambah Menu Item Baru'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nama Menu (Indonesia) *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Nasi Goreng"
-                      required
-                      disabled={isSaving}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nameEn">Nama Menu (English)</Label>
-                    <Input
-                      id="nameEn"
-                      value={formData.nameEn}
-                      onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                      placeholder="Fried Rice"
-                      disabled={isSaving}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Harga (Rp) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="25000"
-                      required
-                      disabled={isSaving}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Kategori *</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      placeholder="Makanan Utama"
-                      list="categories"
-                      required
-                      disabled={isSaving}
-                    />
-                    <datalist id="categories">
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat} />
-                      ))}
-                    </datalist>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Deskripsi (Indonesia) *</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Nasi goreng spesial dengan telur, ayam, dan sayuran"
-                    rows={3}
-                    required
-                    disabled={isSaving}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="descriptionEn">Deskripsi (English)</Label>
-                  <Textarea
-                    id="descriptionEn"
-                    value={formData.descriptionEn}
-                    onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
-                    placeholder="Special fried rice with egg, chicken, and vegetables"
-                    rows={3}
-                    disabled={isSaving}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image">URL Gambar</Label>
-                  <Input
-                    id="image"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    disabled={isSaving}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Tip: Upload gambar ke layanan seperti Imgur atau gunakan URL gambar
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      resetForm();
-                    }}
-                    disabled={isSaving}
-                  >
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSaving}>
-                    {isSaving ? (
-                      <>
-                        <Loader className="size-4 mr-2 animate-spin" />
-                        Menyimpan...
-                      </>
-                    ) : (
-                      <>{editingItem ? 'Update' : 'Tambah'} Menu</>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+    <div className="space-y-6 pb-20">
+      
+      {/* HEADER & TOMBOL TAMBAH (Layout Stacked di Mobile biar gak numpuk) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-5 rounded-xl shadow-sm border border-gray-100 gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Daftar Menu</h2>
+          <p className="text-sm text-gray-500 mt-1">{menuItems.length} Item tersedia</p>
         </div>
+        
+        {/* Tombol Tambah Menu: Besar & Jelas (48px height) */}
+        <button 
+          onClick={() => { resetForm(); setIsDialogOpen(true); }}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 h-12 rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-95 font-bold text-base"
+        >
+          <Plus className="h-6 w-6" />
+          <span>Tambah Menu</span>
+        </button>
+      </div>
 
-        {isLoading ? (
-          <div className="text-center py-12 text-gray-500">
-            <Loader className="size-8 mx-auto mb-2 animate-spin" />
-            <p>Loading menu items...</p>
-          </div>
-        ) : menuItems.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>Belum ada menu item. Klik "Tambah Menu" untuk memulai.</p>
-          </div>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={sortedMenuItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
-                {sortedMenuItems.map((item) => (
-                  <SortableMenuItem
-                    key={item.id}
-                    item={item}
-                    onEdit={() => handleEdit(item)}
-                    onDelete={() => {
-                      if (confirm(`Hapus "${item.name}" dari menu?`)) {
-                        deleteMenuItem(item.id)
-                          .then(() => toast.success(`${item.name} deleted`))
-                          .catch((err) => {
-                            toast.error('Failed to delete menu item');
-                            console.error(err);
-                          });
-                      }
-                    }}
+      {/* MODAL FORM (Pop-up) */}
+      {isDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b bg-gray-50 shrink-0">
+              <h3 className="text-lg font-bold text-gray-900">
+                {isEditing ? 'Edit Menu' : 'Tambah Menu Baru'}
+              </h3>
+              <button 
+                onClick={() => setIsDialogOpen(false)}
+                className="text-gray-400 hover:text-gray-600 bg-white hover:bg-gray-200 p-2 rounded-full transition-colors shadow-sm border"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Modal Body (Form Scrollable) */}
+            <div className="overflow-y-auto p-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-semibold text-gray-700">Nama Menu</label>
+                  <input 
+                    id="name" 
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base"
+                    placeholder="Contoh: Nasi Goreng Spesial" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
                   />
-                ))}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="price" className="text-sm font-semibold text-gray-700">Harga (Rp)</label>
+                    <input 
+                      id="price" 
+                      type="number" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base"
+                      placeholder="25000" 
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="category" className="text-sm font-semibold text-gray-700">Kategori</label>
+                    <div className="relative">
+                      <select 
+                        value={formData.category} 
+                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base appearance-none bg-white"
+                      >
+                        <option value="Main Course">Main Course</option>
+                        <option value="Appetizer">Appetizer</option>
+                        <option value="Dessert">Dessert</option>
+                        <option value="Beverage">Beverage</option>
+                      </select>
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="image" className="text-sm font-semibold text-gray-700">URL Gambar</label>
+                  <div className="flex gap-3">
+                    <input 
+                      id="image" 
+                      type="text"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base"
+                      placeholder="https://..." 
+                      value={formData.image}
+                      onChange={(e) => setFormData({...formData, image: e.target.value})}
+                    />
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      {formData.image ? (
+                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = '')} />
+                      ) : (
+                        <ImageIcon className="h-6 w-6 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="description" className="text-sm font-semibold text-gray-700">Deskripsi</label>
+                  <textarea 
+                    id="description" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base min-h-[100px]"
+                    placeholder="Deskripsi singkat menu..." 
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2 mb-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" /> Menyimpan...
+                    </>
+                  ) : (
+                    isEditing ? 'Simpan Perubahan' : 'Tambah Menu'
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
+        </div>
+      ) : menuItems.length === 0 ? (
+        // Empty State (Jumbo)
+        <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 mx-4">
+          <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Plus className="h-10 w-10 text-orange-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">Belum ada menu</h3>
+          <p className="text-gray-500 mt-2 max-w-xs mx-auto">Mulai tambahkan menu makananmu sekarang.</p>
+        </div>
+      ) : (
+        // Menu Grid List
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {menuItems.map((item) => (
+            <div key={item.id} className="group bg-white rounded-2xl border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all overflow-hidden shadow-sm">
+              <div className="flex p-4 gap-4 items-center">
+                {/* Image Thumbnail (Lebih Besar) */}
+                <div className="w-24 h-24 shrink-0 bg-gray-100 rounded-xl overflow-hidden relative shadow-inner">
+                  {item.image ? (
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <ImageIcon className="h-10 w-10" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Content Info */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between h-24">
+                  <div>
+                    <h3 className="font-bold text-gray-900 truncate text-lg leading-tight">{item.name}</h3>
+                    <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full border border-orange-100">
+                      {item.category}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-end mt-1">
+                    <p className="text-base font-bold text-gray-900">
+                      Rp {item.price.toLocaleString('id-ID')}
+                    </p>
+                    
+                    {/* Action Buttons (Diperbesar) */}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleEdit(item)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors border border-blue-100"
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(item.id)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-100"
+                        title="Hapus"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </SortableContext>
-          </DndContext>
-        )}
-      </Card>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
