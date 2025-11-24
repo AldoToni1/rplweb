@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Download, Copy, CheckCircle, ExternalLink } from 'lucide-react';
-import { MenuSettings } from '../App';
+import { MenuSettings } from '../contexts/MenuContext';
 import QRCode from 'qrcode';
 
 interface QRCodeGeneratorProps {

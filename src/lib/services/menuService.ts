@@ -109,8 +109,10 @@ export async function createMenu(menuData: Omit<MenuItem, 'id' | 'order'>): Prom
     return {
       id: menu.id,
       name: menu.name,
+      nameEn: menuData.nameEn,
       price: menu.price,
       description: menu.description || '',
+      descriptionEn: menuData.descriptionEn,
       category: menu.category || '',
       image: menuData.image,
       photos: photos,

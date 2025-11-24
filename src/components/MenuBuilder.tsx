@@ -1,4 +1,5 @@
-import { useState } from 'react';
+"use client";
+import React, { useState } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,7 +7,9 @@ import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Plus, Pencil, Trash2, GripVertical, Loader } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, Loader, Upload, X } from 'lucide-react';
+
+
 import {
   DndContext,
   closestCenter,
@@ -28,6 +31,7 @@ import type { MenuItem } from '../contexts/MenuContext';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { toast } from 'sonner';
 
+
 interface MenuItemFormData {
   name: string;
   nameEn: string;
@@ -48,24 +52,34 @@ function SortableMenuItem({ item, onEdit, onDelete }: { item: MenuItem; onEdit: 
   };
 
   return (
-    <Card ref={setNodeRef} style={style} className="p-4">
+    <Card ref={setNodeRef} style={style} className="p-4 relative">
       <div className="flex items-start gap-4">
-        <button className="mt-2 cursor-grab active:cursor-grabbing touch-none" {...attributes} {...listeners}>
+        <button 
+          className="mt-2 cursor-grab active:cursor-grabbing touch-none flex-shrink-0" 
+          {...attributes} 
+          {...listeners}
+        >
           <GripVertical className="size-5 text-gray-400" />
         </button>
 
         {item.image && (
-          <ImageWithFallback src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
+          <div className="flex-shrink-0">
+            <ImageWithFallback 
+              src={item.image} 
+              alt={item.name} 
+              className="w-20 h-20 object-cover rounded-lg" 
+            />
+          </div>
         )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{item.name}</h3>
-              {item.nameEn && <p className="text-sm text-gray-500">{item.nameEn}</p>}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
+              {item.nameEn && <p className="text-sm text-gray-500 truncate">{item.nameEn}</p>}
               <p className="text-orange-600 font-semibold mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Button variant="outline" size="sm" onClick={onEdit}>
                 <Pencil className="size-4" />
               </Button>
@@ -74,8 +88,8 @@ function SortableMenuItem({ item, onEdit, onDelete }: { item: MenuItem; onEdit: 
               </Button>
             </div>
           </div>
-          <p className="text-sm text-gray-600 mt-2">{item.description}</p>
-          {item.descriptionEn && <p className="text-sm text-gray-500 mt-1 italic">{item.descriptionEn}</p>}
+          <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.description}</p>
+          {item.descriptionEn && <p className="text-sm text-gray-500 mt-1 italic line-clamp-2">{item.descriptionEn}</p>}
           <span className="inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
             {item.category}
           </span>
@@ -90,6 +104,7 @@ export function MenuBuilder() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState<MenuItemFormData>({
     name: '',
     nameEn: '',
@@ -100,12 +115,22 @@ export function MenuBuilder() {
     image: '',
   });
 
+  // const sensors = useSensors(
+  //   useSensor(PointerSensor),
+  //   useSensor(KeyboardSensor, {
+  //     coordinateGetter: sortableKeyboardCoordinates,
+  //   })
+  // );
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 5, // WAJIB BIAR DRAG BISA AKTIF
+    },
+  }),
+  useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates,
+  })
+);
 
   const categories = Array.from(new Set(menuItems.map((item) => item.category))).filter(Boolean);
 
@@ -151,7 +176,49 @@ export function MenuBuilder() {
       category: '',
       image: '',
     });
+    setImagePreview(null);
     setEditingItem(null);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validasi tipe file
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Format file tidak didukung. Gunakan JPG, JPEG, atau PNG.');
+      return;
+    }
+
+    // Validasi ukuran file (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Ukuran file terlalu besar. Maksimal 5MB.');
+      return;
+    }
+
+    // Convert ke Base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setFormData({ ...formData, image: base64String });
+      setImagePreview(base64String);
+    };
+    reader.onerror = () => {
+      toast.error('Gagal membaca file gambar.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image: '' });
+    setImagePreview(null);
+    // Reset file input
+    const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -165,6 +232,8 @@ export function MenuBuilder() {
       category: item.category,
       image: item.image || '',
     });
+    // Set preview jika ada image (bisa URL atau Base64)
+    setImagePreview(item.image || null);
     setIsDialogOpen(true);
   };
 
@@ -198,7 +267,9 @@ export function MenuBuilder() {
             open={isDialogOpen}
             onOpenChange={(open: boolean) => {
               setIsDialogOpen(open);
-              if (!open) resetForm();
+              if (!open) {
+                resetForm();
+              }
             }}
           >
             <DialogTrigger asChild>
@@ -294,16 +365,56 @@ export function MenuBuilder() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image">URL Gambar</Label>
-                  <Input
-                    id="image"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    disabled={isSaving}
-                  />
+                  <Label htmlFor="image-upload">Gambar Menu</Label>
+                  
+                  {/* File Input */}
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor="image-upload"
+                      className="flex-1 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors bg-gray-50">
+                        <Upload className="size-5 text-gray-500" />
+                        <span className="text-sm text-gray-700 font-medium">
+                          {imagePreview ? 'Ganti Gambar' : 'Pilih Gambar (JPG, PNG, max 5MB)'}
+                        </span>
+                      </div>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        onChange={handleImageUpload}
+                        disabled={isSaving}
+                        className="hidden"
+                      />
+                    </label>
+                    {imagePreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveImage}
+                        disabled={isSaving}
+                        className="flex-shrink-0"
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Image Preview */}
+                  {imagePreview && (
+                    <div className="relative mt-3 rounded-lg overflow-hidden border border-gray-200">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover"
+                      />
+                    </div>
+                  )}
+
                   <p className="text-xs text-gray-500">
-                    Tip: Upload gambar ke layanan seperti Imgur atau gunakan URL gambar
+                    Format yang didukung: JPG, PNG. Maksimal ukuran: 5MB
                   </p>
                 </div>
 
@@ -347,7 +458,7 @@ export function MenuBuilder() {
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={sortedMenuItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
+              <div className="space-y-3 w-full">
                 {sortedMenuItems.map((item) => (
                   <SortableMenuItem
                     key={item.id}

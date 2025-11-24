@@ -4,6 +4,17 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, Copy, Check, ExternalLink } from 'lucide-react';
+import MenuList from "../components/MenuList";
+
+export default function AdminMenuPage() {
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-xl font-semibold">Kelola Menu</h1>
+
+      <MenuList />
+    </div>
+  );
+}
 
 export function MenuPreview() {
   const { settings } = useMenu();
