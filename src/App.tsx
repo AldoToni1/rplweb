@@ -12,7 +12,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Auth Routes */}
+        {/* Auth Routes - Login & Register Page */}
         <Route
           path="/login"
           element={
@@ -23,12 +23,7 @@ export default function App() {
             )
           }
         />
-        <Route
-          path="/register"
-          element={
-            <Register onSwitchToLogin={() => setAuthView('login')} />
-          }
-        />
+        <Route path="/register" element={<Register onSwitchToLogin={() => setAuthView('login')} />} />
 
         {/* Protected Admin Routes */}
         <Route
@@ -40,7 +35,7 @@ export default function App() {
           }
         />
 
-        {/* Default route - redirect to admin or login */}
+        {/* Default route - redirect to admin */}
         <Route path="/" element={<Navigate to="/admin" replace />} />
 
         {/* Catch all - redirect to admin */}

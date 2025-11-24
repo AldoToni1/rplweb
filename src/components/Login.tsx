@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -12,11 +13,19 @@ interface LoginProps {
 }
 
 export function Login({ onSwitchToRegister }: LoginProps) {
-  const { signIn, loading } = useAuth();
+  const { signIn, loading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect ke admin jika sudah login
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,13 +64,11 @@ export function Login({ onSwitchToRegister }: LoginProps) {
               <Menu className="size-8 text-white" />
             </div>
           </div>
-          
+
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
             MenuKu Digital
           </CardTitle>
-          <CardDescription className="text-base text-gray-600">
-            Masuk ke akun Anda untuk mengelola menu
-          </CardDescription>
+          <CardDescription className="text-base text-gray-600">Masuk ke akun Anda untuk mengelola menu</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -69,9 +76,7 @@ export function Login({ onSwitchToRegister }: LoginProps) {
           {error && (
             <Alert variant="destructive" className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-red-800">
-                {error}
-              </AlertDescription>
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
             </Alert>
           )}
 
@@ -114,11 +119,7 @@ export function Login({ onSwitchToRegister }: LoginProps) {
                   disabled={loading}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                 >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>

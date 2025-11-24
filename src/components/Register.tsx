@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -12,7 +13,8 @@ interface RegisterProps {
 }
 
 export function Register({ onSwitchToLogin }: RegisterProps) {
-  const { signUp, loading } = useAuth();
+  const { signUp, loading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,6 +22,13 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Redirect ke admin jika sudah login
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const validatePassword = (pass: string): { isValid: boolean; message: string } => {
     if (pass.length < 8) {
@@ -63,9 +72,7 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
 
     try {
       await signUp(email, password);
-      setSuccess(
-        'Pendaftaran berhasil! Cek email Anda untuk verifikasi. Anda akan dialihkan ke login.'
-      );
+      setSuccess('Pendaftaran berhasil! Cek email Anda untuk verifikasi. Anda akan dialihkan ke login.');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
@@ -95,7 +102,7 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
               <Menu className="size-8 text-white" />
             </div>
           </div>
-          
+
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
             MenuKu Digital
           </CardTitle>
@@ -109,9 +116,7 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
           {error && (
             <Alert variant="destructive" className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-red-800">
-                {error}
-              </AlertDescription>
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
             </Alert>
           )}
 
@@ -119,9 +124,7 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
           {success && (
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                {success}
-              </AlertDescription>
+              <AlertDescription className="text-green-800">{success}</AlertDescription>
             </Alert>
           )}
 
@@ -164,20 +167,12 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
                   disabled={loading}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                 >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
               {password && (
                 <p
-                  className={`text-xs font-medium ${
-                    passwordValidation.isValid
-                      ? 'text-green-600'
-                      : 'text-yellow-600'
-                  }`}
+                  className={`text-xs font-medium ${passwordValidation.isValid ? 'text-green-600' : 'text-yellow-600'}`}
                 >
                   {passwordValidation.message}
                 </p>
@@ -205,24 +200,14 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
                   disabled={loading}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
+                  {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
               {confirmPassword && password && (
                 <p
-                  className={`text-xs font-medium ${
-                    password === confirmPassword
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  }`}
+                  className={`text-xs font-medium ${password === confirmPassword ? 'text-green-600' : 'text-red-600'}`}
                 >
-                  {password === confirmPassword
-                    ? 'Password cocok'
-                    : 'Password tidak cocok'}
+                  {password === confirmPassword ? 'Password cocok' : 'Password tidak cocok'}
                 </p>
               )}
             </div>

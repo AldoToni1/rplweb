@@ -71,14 +71,14 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Navigation - SELALU HORIZONTAL */}
-                <nav 
-                  className="flex items-center gap-1 relative z-[101] overflow-x-auto overflow-y-hidden" 
-                  style={{ 
-                    flexDirection: 'row', 
+                <nav
+                  className="flex items-center gap-1 relative z-[101] overflow-x-auto overflow-y-hidden"
+                  style={{
+                    flexDirection: 'row',
                     flexWrap: 'nowrap',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch'
+                    WebkitOverflowScrolling: 'touch',
                   }}
                 >
                   {/* Menu Items */}
@@ -98,11 +98,11 @@ export default function AdminDashboard() {
                                 : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                             }
                           `}
-                          style={{ 
-                            pointerEvents: 'auto', 
-                            display: 'flex', 
+                          style={{
+                            pointerEvents: 'auto',
+                            display: 'flex',
                             flexDirection: 'row',
-                            flexWrap: 'nowrap'
+                            flexWrap: 'nowrap',
                           }}
                         >
                           <Icon className="size-4 flex-shrink-0" />
@@ -111,18 +111,18 @@ export default function AdminDashboard() {
                         </button>
                       );
                     })}
-                    
+
                     {/* View Public Menu Button */}
                     <Button
                       onClick={() => setShowPublicView(true)}
                       variant="outline"
                       size="sm"
                       className="gap-2 ml-2 relative z-[102] flex-shrink-0"
-                      style={{ 
-                        pointerEvents: 'auto', 
-                        display: 'flex', 
+                      style={{
+                        pointerEvents: 'auto',
+                        display: 'flex',
                         flexDirection: 'row',
-                        flexWrap: 'nowrap'
+                        flexWrap: 'nowrap',
                       }}
                     >
                       <Eye className="size-4" />

@@ -25,19 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       try {
         setLoading(true);
-        
+
         // Get current session
         const { data } = await supabase.auth.getSession();
         setSession(data.session);
         setUser(data.session?.user ?? null);
 
         // Listen to auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-          }
-        );
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+        });
 
         return () => subscription?.unsubscribe();
       } catch (error) {
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
-      
+
       if (error) throw error;
     } catch (error) {
       console.error('Sign up error:', error);
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
-      
+
       if (error) throw error;
       setSession(data.session);
       setUser(data.session?.user ?? null);
