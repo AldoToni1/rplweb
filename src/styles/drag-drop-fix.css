@@ -1,0 +1,232 @@
+/**
+ * 🛠️ CSS Fix untuk Navbar yang Terganggu oleh Drag & Drop
+ * 
+ * File ini memastikan navbar tetap di atas elemen drag & drop
+ * dan tidak terganggu saat fitur drag aktif.
+ */
+
+/* ============================================
+   Z-INDEX LAYER SYSTEM
+   ============================================
+   
+   Dialog/Modal Content: z-index: 10000 (MUST BE HIGHEST - di atas segalanya)
+   Dialog/Modal Overlay: z-index: 9999 (MUST BE HIGHEST - di atas segalanya)
+   Navbar/Header:     z-index: 100
+   TabsList:          z-index: 90
+   Drag Overlay:      z-index: 60
+   Dragging Item:     z-index: 55
+   Dropdown/Popover:  z-index: 40 (default dari shadcn)
+   Tooltip:           z-index: 30 (default dari shadcn)
+   ============================================ */
+
+/* Fix untuk DragOverlay dari @dnd-kit */
+/* Pastikan DragOverlay tidak melebihi z-index navbar */
+[data-rbd-drag-handle-draggable-id],
+[data-rbd-draggable-id],
+.dnd-kit-drag-overlay {
+  z-index: 60 !important;
+}
+
+/* Fix untuk @dnd-kit DragOverlay */
+/* @dnd-kit menggunakan portal, jadi kita perlu target lebih spesifik */
+body > [data-dnd-kit-drag-overlay] {
+  z-index: 60 !important;
+}
+
+/* Pastikan navbar selalu di atas */
+header[class*="sticky"],
+header[class*="fixed"] {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
+/* ============================================
+   FIX MODAL/DIALOG STACKING CONTEXT
+   ============================================ */
+
+/* Pastikan Dialog Portal dirender di body dan di atas segalanya */
+/* Radix UI Portal menggunakan [data-radix-portal] atau [data-radix-popper-content-wrapper] */
+body > [data-radix-portal],
+body > [data-radix-popper-content-wrapper],
+body > [data-slot="dialog-portal"],
+[data-radix-portal] {
+  z-index: 9999 !important;
+  position: relative !important;
+  isolation: auto !important;
+  transform: none !important; /* Pastikan tidak ada transform yang membuat stacking context */
+  overflow: visible !important;
+  opacity: 1 !important; /* Pastikan opacity tidak membuat stacking context */
+}
+
+/* CRITICAL: Pastikan #root tidak membuat stacking context yang membatasi portal */
+#root {
+  isolation: auto !important;
+  transform: none !important;
+  overflow: visible !important;
+  position: relative !important; /* Bukan fixed/absolute yang bisa membatasi */
+}
+
+/* Dialog Overlay - harus di atas navbar */
+[data-slot="dialog-overlay"],
+[role="dialog"][data-slot="dialog-overlay"],
+[data-state="open"][role="dialog"] > [data-slot="dialog-overlay"] {
+  z-index: 9999 !important;
+  position: fixed !important;
+  inset: 0 !important;
+  transform: none !important; /* Pastikan tidak ada transform yang membuat stacking context */
+}
+
+/* Dialog Content - harus di atas overlay dan navbar */
+[data-slot="dialog-content"],
+[role="dialog"][data-slot="dialog-content"],
+[data-state="open"][role="dialog"] > [data-slot="dialog-content"] {
+  z-index: 10000 !important;
+  position: fixed !important;
+  isolation: isolate !important; /* Buat stacking context baru untuk modal */
+}
+
+/* Pastikan tidak ada parent yang membatasi modal */
+[data-slot="dialog-portal"] {
+  position: static !important;
+  z-index: auto !important;
+  isolation: auto !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+/* Fix untuk semua Radix UI Dialog elements */
+[data-state="open"][role="dialog"] {
+  z-index: 10000 !important;
+}
+
+/* Override transform pada DialogContent - biarkan transform untuk positioning tapi pastikan z-index */
+[data-slot="dialog-content"][style*="transform"] {
+  z-index: 10000 !important;
+}
+
+/* Pastikan semua button di navbar bisa diklik */
+header button,
+header nav button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 102 !important;
+}
+
+/* Pastikan TabsList selalu di atas drag overlay */
+[role="tablist"] {
+  position: relative;
+  z-index: 90 !important;
+}
+
+/* Pastikan tab trigger bisa diklik */
+[role="tab"] {
+  position: relative;
+  z-index: 91 !important;
+}
+
+/* Fix untuk item yang sedang di-drag */
+/* Pastikan tidak melebihi navbar */
+[data-dragging="true"],
+[aria-pressed="true"][data-state="on"] {
+  z-index: 55 !important;
+}
+
+/* Pastikan konten di dalam TabsContent tidak overlap navbar */
+[role="tabpanel"] {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fix untuk mencegah pointer-events di navbar saat drag */
+/* Hanya aktif saat drag sedang berlangsung */
+body[data-dnd-dragging="true"] header {
+  pointer-events: auto !important;
+}
+
+/* Pastikan drag overlay tidak menutupi navbar */
+.dnd-kit-drag-overlay {
+  pointer-events: none;
+}
+
+.dnd-kit-drag-overlay > * {
+  pointer-events: auto;
+}
+
+/* Fix untuk mencegah layout shift saat drag */
+[data-dnd-kit-sortable] {
+  position: relative;
+}
+
+/* Pastikan container drag tidak overflow */
+[data-dnd-kit-sortable-context] {
+  position: relative;
+  overflow: visible;
+}
+
+/* ============================================
+   FIX NAVBAR - HILANGKAN VERTICAL MENU GHOST
+   ============================================ */
+
+/* CRITICAL: Pastikan navbar SELALU horizontal, tidak pernah vertical */
+header nav,
+header [role="navigation"],
+nav[data-slot="navigation"] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+
+/* Hilangkan semua komponen sidebar/vertical menu yang tidak digunakan */
+[data-sidebar="sidebar"]:not([data-mobile="true"]),
+[data-slot="sidebar"]:not([data-mobile="true"]),
+aside[class*="sidebar"]:not([data-mobile="true"]),
+.sidebar-vertical,
+nav[class*="vertical"] {
+  display: none !important;
+}
+
+/* Hilangkan NavigationMenu dropdown yang membuat vertical menu */
+[data-slot="navigation-menu"]:not(:focus-within) [data-slot="navigation-menu-content"],
+[data-slot="navigation-menu-viewport"]:not(:has([data-state="open"])) {
+  display: none !important;
+}
+
+/* Pastikan tidak ada komponen yang memaksa flex-col pada navbar */
+header nav > *,
+header nav > div,
+header nav > ul,
+header nav > ol {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+}
+
+/* Pastikan mobile navbar tetap horizontal dengan scroll */
+@media (max-width: 768px) {
+  header nav {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  header nav::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Pastikan tidak ada hamburger menu atau vertical menu muncul */
+  header [data-sidebar="trigger"],
+  header [data-slot="sidebar-trigger"],
+  header button[aria-label*="menu" i],
+  header button[aria-label*="Menu" i] {
+    display: none !important;
+  }
+}
+
+/* Pastikan tidak ada komponen Sheet/Modal yang menjadi vertical menu */
+[data-slot="sheet-content"][data-sidebar="sidebar"]:not([data-mobile="true"]) {
+  display: none !important;
+}
+

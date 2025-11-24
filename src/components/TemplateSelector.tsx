@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { MenuSettings } from '../App';
+// import { MenuSettings } from '../App';
+// Ambil dari MenuContext, karena definisinya ada di sana
+import { MenuSettings } from '../contexts/MenuContext';
 import { Palette, Sparkles, Crown, Zap } from 'lucide-react';
 
 interface TemplateSelectorProps {
@@ -106,12 +108,14 @@ export default function TemplateSelector({ settings, setSettings }: TemplateSele
           <div className="grid grid-cols-2 gap-4">
             {themes.map((theme) => {
               const Icon = theme.icon;
-              const isSelected = settings.theme === theme.id;
+              // const isSelected = settings.theme === theme.id;
+              const isSelected = settings.template === theme.id;
 
               return (
                 <button
                   key={theme.id}
-                  onClick={() => setSettings({ ...settings, theme: theme.id })}
+                  // onClick={() => setSettings({ ...settings, theme: theme.id })}
+                  onClick={() => setSettings({ ...settings, template: theme.id })}
                   className={`p-6 border-2 rounded-lg text-left transition-all hover:shadow-lg ${
                     isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -134,5 +138,5 @@ export default function TemplateSelector({ settings, setSettings }: TemplateSele
         </CardContent>
       </Card>
     </div>
-  );
+  );  
 }

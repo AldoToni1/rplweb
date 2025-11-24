@@ -1,3 +1,4 @@
+'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getAllMenus, createMenu, updateMenu, deleteMenu } from '../lib/services/menuService';
 import { getAnalyticsSummary, trackOverallView, trackMenuView } from '../lib/services/analyticsService';
@@ -12,6 +13,7 @@ export interface MenuItem {
   category: string;
   image?: string;
   order: number;
+   template?: string; // ✅ ganti theme → template
 }
 
 export interface MenuSettings {
@@ -86,7 +88,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
 
         // Load menus from Supabase
         const menus = await getAllMenus();
-        setMenuItems(menus);
+        setMenuItems(menus.sort((a, b) => a.order - b.order));
+        // setMenuItems(menus);
 
         // Load analytics from Supabase
         const analyticsSummary = await getAnalyticsSummary();
@@ -119,8 +122,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const newItem = await createMenu(item);
-      setMenuItems([...menuItems, newItem]);
-      localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify([...menuItems, newItem]));
+      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
+      setMenuItems((prevItems) => {
+        const updatedItems = [...prevItems, newItem];
+        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(updatedItems));
+        return updatedItems;
+      });
     } catch (err) {
       console.error('Error adding menu item:', err);
       setError('Failed to add menu item');
@@ -132,9 +139,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const updated = await updateMenu(id, updates);
-      const newItems = menuItems.map((item) => (item.id === id ? updated : item));
-      setMenuItems(newItems);
-      localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
+      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
+      setMenuItems((prevItems) => {
+        const newItems = prevItems.map((item) => (item.id === id ? updated : item));
+        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
+        return newItems;
+      });
     } catch (err) {
       console.error('Error updating menu item:', err);
       setError('Failed to update menu item');
@@ -146,9 +156,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       await deleteMenu(id);
-      const newItems = menuItems.filter((item) => item.id !== id);
-      setMenuItems(newItems);
-      localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
+      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
+      setMenuItems((prevItems) => {
+        const newItems = prevItems.filter((item) => item.id !== id);
+        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
+        return newItems;
+      });
     } catch (err) {
       console.error('Error deleting menu item:', err);
       setError('Failed to delete menu item');
@@ -156,21 +169,46 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const reorderMenuItems = async (items: MenuItem[]) => {
-    try {
-      setError(null);
-      const reordered = items.map((item, index) => ({ ...item, order: index }));
-      setMenuItems(reordered);
-      localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
+  // Di dalam MenuContext.tsx
 
-      // Update order in Supabase
-      await Promise.all(reordered.map((item) => updateMenu(item.id, { order: item.order })));
-    } catch (err) {
-      console.error('Error reordering menu items:', err);
-      setError('Failed to reorder menu items');
-      throw err;
-    }
-  };
+const reorderMenuItems = async (items: MenuItem[]) => {
+  try {
+    setError(null);
+    // Update state lokal dulu biar UI responsif
+    const reordered = items.map((item, index) => ({ ...item, order: index }));
+    setMenuItems(reordered);
+    localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
+
+    // 👇 Update database
+    // Jika 'updateMenu' protes soal tipe, kita cast ke 'any' dulu untuk fix cepat
+    await Promise.all(
+      reordered.map((item) => 
+        updateMenu(item.id, { order: item.order } as any) 
+      )
+    );
+  } catch (err) {
+    console.error('Error reordering menu items:', err);
+    setError('Failed to reorder menu items');
+    // Opsional: kembalikan state jika gagal (rollback)
+    throw err;
+  }
+};
+
+  // const reorderMenuItems = async (items: MenuItem[]) => {
+  //   try {
+  //     setError(null);
+  //     const reordered = items.map((item, index) => ({ ...item, order: index }));
+  //     setMenuItems(reordered);
+  //     localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
+
+  //     // Update order in Supabase
+  //     await Promise.all(reordered.map((item) => updateMenu(item.id, { order: item.order })));
+  //   } catch (err) {
+  //     console.error('Error reordering menu items:', err);
+  //     setError('Failed to reorder menu items');
+  //     throw err;
+  //   }
+  // };
 
   const updateSettings = (updates: Partial<MenuSettings>) => {
     setSettings({ ...settings, ...updates });
@@ -231,3 +269,43 @@ export function useMenu() {
   }
   return context;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
