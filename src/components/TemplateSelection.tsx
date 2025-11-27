@@ -59,7 +59,7 @@ export function TemplateSelection() {
               id="restaurantNameEn"
               value={settings.restaurantNameEn || ''}
               onChange={(e) => updateSettings({ restaurantNameEn: e.target.value })}
-              placeholder="My Restaurant"
+              placeholder="D'Sai kitchen"
             />
           </div>
           <div className="space-y-2">

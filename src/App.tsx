@@ -1,46 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { MenuProvider } from './contexts/MenuContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './components/Login';
-import { Register } from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
+import { PublicMenu } from './components/PublicMenu';
 
 export default function App() {
-  const [authView, setAuthView] = useState<'login' | 'register'>('login');
-
   return (
     <AuthProvider>
-      <Routes>
-        {/* Auth Routes - Login & Register Page */}
-        <Route
-          path="/login"
-          element={
-            authView === 'login' ? (
-              <Login onSwitchToRegister={() => setAuthView('register')} />
-            ) : (
-              <Register onSwitchToLogin={() => setAuthView('login')} />
-            )
-          }
-        />
-        <Route path="/register" element={<Register onSwitchToLogin={() => setAuthView('login')} />} />
+      <LanguageProvider>
+        <MenuProvider>
+          <Routes>
+            {/* Public Menu - Halaman pertama yang muncul */}
+            <Route path="/public" element={<PublicMenu />} />
+            <Route path="/" element={<Navigate to="/public" replace />} />
 
-        {/* Protected Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+            {/* Login Page - Untuk akses dashboard */}
+            <Route path="/login" element={<Login />} />
 
-        {/* Default route - redirect to admin */}
-        <Route path="/" element={<Navigate to="/admin" replace />} />
+            {/* Dashboard - Hanya untuk yang sudah login */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-        {/* Catch all - redirect to admin */}
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
+            {/* Catch-all - Redirect ke public */}
+            <Route path="*" element={<Navigate to="/public" replace />} />
+          </Routes>
+        </MenuProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

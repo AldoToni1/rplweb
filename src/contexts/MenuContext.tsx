@@ -13,7 +13,7 @@ export interface MenuItem {
   category: string;
   image?: string;
   order: number;
-   template?: string; // ✅ ganti theme → template
+  template?: string; // ✅ ganti theme → template
 }
 
 export interface MenuSettings {
@@ -61,8 +61,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     return stored
       ? JSON.parse(stored)
       : {
-          restaurantName: 'Rumah Makan Saya',
-          restaurantNameEn: 'My Restaurant',
+          restaurantName: "D'Sai kitchen",
+          restaurantNameEn: "D'Sai kitchen",
           whatsappNumber: '6281227281923',
           template: 'minimalist',
         };
@@ -171,28 +171,24 @@ export function MenuProvider({ children }: { children: ReactNode }) {
 
   // Di dalam MenuContext.tsx
 
-const reorderMenuItems = async (items: MenuItem[]) => {
-  try {
-    setError(null);
-    // Update state lokal dulu biar UI responsif
-    const reordered = items.map((item, index) => ({ ...item, order: index }));
-    setMenuItems(reordered);
-    localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
+  const reorderMenuItems = async (items: MenuItem[]) => {
+    try {
+      setError(null);
+      // Update state lokal dulu biar UI responsif
+      const reordered = items.map((item, index) => ({ ...item, order: index }));
+      setMenuItems(reordered);
+      localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
 
-    // 👇 Update database
-    // Jika 'updateMenu' protes soal tipe, kita cast ke 'any' dulu untuk fix cepat
-    await Promise.all(
-      reordered.map((item) => 
-        updateMenu(item.id, { order: item.order } as any) 
-      )
-    );
-  } catch (err) {
-    console.error('Error reordering menu items:', err);
-    setError('Failed to reorder menu items');
-    // Opsional: kembalikan state jika gagal (rollback)
-    throw err;
-  }
-};
+      // 👇 Update database
+      // Jika 'updateMenu' protes soal tipe, kita cast ke 'any' dulu untuk fix cepat
+      await Promise.all(reordered.map((item) => updateMenu(item.id, { order: item.order } as any)));
+    } catch (err) {
+      console.error('Error reordering menu items:', err);
+      setError('Failed to reorder menu items');
+      // Opsional: kembalikan state jika gagal (rollback)
+      throw err;
+    }
+  };
 
   // const reorderMenuItems = async (items: MenuItem[]) => {
   //   try {
@@ -269,43 +265,3 @@ export function useMenu() {
   }
   return context;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
