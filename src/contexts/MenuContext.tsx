@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getAllMenus, createMenu, updateMenu, deleteMenu } from '../lib/services/menuService';
+import { getAllMenus, createMenu, updateMenu, deleteMenu, updateMenuOrder } from '../lib/services/menuService';
 import { getAnalyticsSummary, trackOverallView, trackMenuView } from '../lib/services/analyticsService';
 
 export interface MenuItem {
@@ -179,13 +179,8 @@ const reorderMenuItems = async (items: MenuItem[]) => {
     setMenuItems(reordered);
     localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
 
-    // 👇 Update database
-    // Jika 'updateMenu' protes soal tipe, kita cast ke 'any' dulu untuk fix cepat
-    await Promise.all(
-      reordered.map((item) => 
-        updateMenu(item.id, { order: item.order } as any) 
-      )
-    );
+    // Update order di Supabase menggunakan fungsi bulk update
+    await updateMenuOrder(reordered.map((item) => ({ id: item.id, order: item.order })));
   } catch (err) {
     console.error('Error reordering menu items:', err);
     setError('Failed to reorder menu items');

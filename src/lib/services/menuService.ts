@@ -22,6 +22,7 @@ export async function getAllMenus(): Promise<MenuItemWithPhotos[]> {
     const { data: menus, error: menusError } = await supabase
       .from('menus')
       .select('*')
+      .order('order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
     if (menusError) throw menusError;
@@ -30,7 +31,7 @@ export async function getAllMenus(): Promise<MenuItemWithPhotos[]> {
 
     // Fetch photos for each menu
     const menusWithPhotos = await Promise.all(
-      menus.map(async (menu) => {
+      menus.map(async (menu, index) => {
         const photos = await getMenuPhotos(menu.id);
         return {
           id: menu.id,
@@ -40,7 +41,7 @@ export async function getAllMenus(): Promise<MenuItemWithPhotos[]> {
           category: menu.category || '',
           image: photos[0] || undefined,
           photos: photos,
-          order: 0,
+          order: (menu as any).order ?? index, // Use order from DB or fallback to index
         } as MenuItemWithPhotos;
       })
     );
@@ -237,6 +238,33 @@ export async function deleteMenuPhotos(menuId: string): Promise<void> {
     if (error) throw error;
   } catch (error) {
     console.error('Error deleting menu photos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update menu order in bulk
+ */
+export async function updateMenuOrder(items: { id: string; order: number }[]): Promise<void> {
+  try {
+    // Update each item's order in Supabase
+    const promises = items.map((item) =>
+      supabase
+        .from('menus')
+        .update({ order: item.order })
+        .eq('id', item.id)
+    );
+
+    const results = await Promise.all(promises);
+    
+    // Check for errors
+    const errors = results.filter((result) => result.error);
+    if (errors.length > 0) {
+      const errorMessages = errors.map((e) => e.error?.message).join(', ');
+      throw new Error(`Failed to update ${errors.length} menu items: ${errorMessages}`);
+    }
+  } catch (error) {
+    console.error('Error updating menu order:', error);
     throw error;
   }
 }

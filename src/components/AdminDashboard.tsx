@@ -5,18 +5,15 @@ import { MenuBuilder } from './MenuBuilder';
 import { TemplateSelection } from './TemplateSelection';
 import { MenuPreview } from './MenuPreview';
 import { Analytics } from './Analytics';
-import { PublicMenu } from './PublicMenu';
-import { MenuSorter } from './MenuSorter';
+import MenuSorting from './MenuSorting';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { MenuProvider } from '../contexts/MenuContext';
-import { CartProvider } from '../contexts/cartcontext';
 import { LayoutDashboard, Eye, BarChart3, Palette, Menu, GripVertical, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 import { Toaster } from './ui/sonner';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('builder');
-  const [showPublicView, setShowPublicView] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
 
@@ -29,21 +26,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // Check if we're in public view mode (via URL parameter)
-  const urlParams = new URLSearchParams(window.location.search);
-  const isPublicView = urlParams.get('view') === 'public';
-
-  if (isPublicView || showPublicView) {
-    return (
-      <LanguageProvider>
-        <MenuProvider>
-          <CartProvider>
-            <PublicMenu onBack={() => setShowPublicView(false)} />
-          </CartProvider>
-        </MenuProvider>
-      </LanguageProvider>
-    );
-  }
+  const handleViewPublic = () => {
+    // Navigate to public route in new tab
+    window.open('/public', '_blank');
+  };
 
   // All navigation items
   const navItems = [
@@ -117,7 +103,7 @@ export default function AdminDashboard() {
 
                     {/* View Public Menu Button */}
                     <Button
-                      onClick={() => setShowPublicView(true)}
+                      onClick={handleViewPublic}
                       variant="outline"
                       size="sm"
                       className="gap-2 ml-2 relative z-[102] flex-shrink-0"
@@ -163,7 +149,7 @@ export default function AdminDashboard() {
             )}
             {activeTab === 'sorter' && (
               <div className="space-y-6">
-                <MenuSorter />
+                <MenuSorting />
               </div>
             )}
             {activeTab === 'template' && (

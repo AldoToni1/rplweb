@@ -15,8 +15,9 @@ interface CartContextType {
   removeFromCart: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
-  getTotalItems: () => number;
-  getTotalPrice: () => number;
+  getQuantity: (id: string) => number;
+  decrementQuantity: (id: string) => void;
+  incrementQuantity: (id: string) => void;
 }
 
 const STORAGE_KEY = "menuKu_cart";
@@ -62,12 +63,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => sync([]);
 
-  const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.qty, 0);
+  const getQuantity = (id: string): number => {
+    const item = cart.find((i) => i.id === id);
+    return item ? item.qty : 0;
   };
 
-  const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + item.qty * item.price, 0);
+  const decrementQuantity = (id: string) => {
+    const existing = cart.find((i) => i.id === id);
+    if (existing) {
+      if (existing.qty <= 1) {
+        // Jika kuantitas <= 1, hapus dari keranjang
+        sync(cart.filter((i) => i.id !== id));
+      } else {
+        // Kurangi kuantitas
+        sync(cart.map(i => i.id === id ? { ...i, qty: i.qty - 1 } : i));
+      }
+    }
+  };
+
+  const incrementQuantity = (id: string) => {
+    const existing = cart.find((i) => i.id === id);
+    if (existing) {
+      sync(cart.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i));
+    }
   };
 
   return (
@@ -77,8 +95,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       removeFromCart, 
       updateQty, 
       clearCart,
-      getTotalItems,
-      getTotalPrice
+      getQuantity,
+      decrementQuantity,
+      incrementQuantity
     }}>
       {children}
     </CartContext.Provider>

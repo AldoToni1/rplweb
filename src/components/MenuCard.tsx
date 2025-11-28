@@ -1,128 +1,135 @@
-import React, { useState } from "react";
-import { ShoppingCart, Check } from "lucide-react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import React from "react";
+import { ShoppingCart, ImageIcon, Plus, Minus } from "lucide-react";
 import { useCart } from "../contexts/cartcontext";
+import type { MenuItem } from "../contexts/MenuContext";
 
 interface MenuCardProps {
-  image: string;
-  name: string;
-  description: string;
-  price: string;
-  itemId: string;
-  onAddToCart?: () => void;
+  item: MenuItem;
+  language?: 'id' | 'en';
 }
 
-export function MenuCard({
-  image,
-  name,
-  description,
-  price,
-  itemId,
-  onAddToCart,
-}: MenuCardProps) {
-  const { addToCart } = useCart();
-  const numericPrice = parseFloat(price.replace(/[^\d]/g, '')) || 0;
-  const [isAdded, setIsAdded] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+export function MenuCard({ item, language = 'id' }: MenuCardProps) {
+  const { addToCart, getQuantity, decrementQuantity, incrementQuantity } = useCart();
+
+  // Get localized name and description
+  const displayName = language === 'id' ? item.name : (item.nameEn || item.name);
+  const displayDescription = language === 'id' ? item.description : (item.descriptionEn || item.description);
+
+  // Get current quantity from cart
+  const currentQuantity = getQuantity(item.id);
+
+  // Format price as Rupiah
+  const formatPrice = (price: number) => {
+    return `Rp ${price.toLocaleString('id-ID')}`;
+  };
 
   const handleAddToCart = () => {
     addToCart({
-      id: itemId,
-      name: name,
-      price: numericPrice,
+      id: item.id,
+      name: displayName,
+      price: item.price,
     });
-    
-    // Trigger success animation
-    setIsAdded(true);
-    setIsAnimating(true);
-    
-    // Reset animation after 2 seconds
-    setTimeout(() => {
-      setIsAdded(false);
-      setIsAnimating(false);
-    }, 2000);
-    
-    if (onAddToCart) {
-      onAddToCart();
+  };
+
+  const handleDecrement = () => {
+    decrementQuantity(item.id);
+  };
+
+  const handleIncrement = () => {
+    if (currentQuantity === 0) {
+      addToCart({
+        id: item.id,
+        name: displayName,
+        price: item.price,
+      });
+    } else {
+      incrementQuantity(item.id);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 border border-gray-200 flex flex-col h-full">
-      {/* Image Section */}
-      <div className="aspect-[4/3] overflow-hidden bg-gray-100 flex-shrink-0 w-full relative">
-        <ImageWithFallback
-          src={image || ""}
-          alt={name || "Menu item"}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      {/* Content Section */}
-      <div className="p-4 flex flex-col flex-1 min-h-0">
-        {/* Title and Price */}
-        <div className="flex justify-between items-start mb-2 gap-3">
-          <h3 className="text-gray-900 font-semibold text-base flex-1 leading-tight min-w-0">{name || "Menu Item"}</h3>
-          <span className="text-amber-600 whitespace-nowrap font-semibold text-base flex-shrink-0">{price || "Rp 0"}</span>
-        </div>
-        
-        {/* Description */}
-        <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3 flex-1 min-h-0">{description || "No description"}</p>
-        
-        {/* Add to Cart Button - Always visible at bottom */}
-        <div className="mt-auto pt-2 border-t border-gray-100 -mx-4 -mb-4 px-4 pb-4">
-          <button
-            onClick={handleAddToCart}
-            disabled={isAnimating || numericPrice <= 0}
-            className={`
-              w-full h-12 text-white text-[16px]
-              rounded-[14px] flex items-center justify-center gap-2
-              transition-all duration-200 font-semibold
-              ${isAnimating || numericPrice <= 0
-                ? 'bg-[#D9D9D9] cursor-not-allowed font-normal shadow-none'
-                : isAdded 
-                  ? 'bg-green-500 hover:bg-green-600 shadow-lg' 
-                  : 'bg-[#FF6A00] hover:bg-[#E85B00] hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] shadow-md'
-              }
-              ${isAnimating ? 'animate-bounce' : ''}
-            `}
-            type="button"
-            style={{
-              boxShadow: isAdded 
-                ? '0 4px 12px rgba(34, 197, 94, 0.3)' 
-                : (isAnimating || numericPrice <= 0) 
-                  ? 'none' 
-                  : '0 2px 8px rgba(255, 106, 0, 0.25), 0 0 0 1px rgba(255, 106, 0, 0.1)'
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-gray-200 flex flex-col h-full overflow-hidden max-w-[350px] w-full mx-auto">
+      {/* Image Section - Fixed Height at Top */}
+      <div className="aspect-video overflow-hidden bg-gray-100 flex-shrink-0 w-full relative rounded-t-xl">
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={displayName}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
             }}
-          >
-            {isAdded ? (
-              <>
-                <Check className="w-5 h-5 flex-shrink-0 animate-pulse" />
-                <span>Ditambahkan!</span>
-              </>
-            ) : (
-              <>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="2.5"
-                  stroke="currentColor"
-                  className="w-5 h-5 flex-shrink-0"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437m0 0L6.53 13.496a1.125 1.125 0 001.087.829h9.316a1.125 1.125 0 001.086-.828l1.257-6.729a1.125 1.125 0 00-1.086-1.322H5.106l.387-1.44zm3.97 13.5a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm10.5 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
-                  />
-                </svg>
-                <span>Tambah ke Keranjang</span>
-              </>
-            )}
-          </button>
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <ImageIcon className="w-16 h-16 text-gray-400" />
+          </div>
+        )}
+      </div>
+
+      {/* Content Section - Flex column with justify-between for bottom-fixed button */}
+      <div className="px-4 py-3 flex flex-col flex-grow justify-between min-h-[180px]">
+        {/* Top Section: Name, Description, Price - Fixed height area */}
+        <div className="flex-grow flex flex-col">
+          {/* Product Name - Bold and Clear with fixed height */}
+          <h3 className="text-gray-900 font-bold text-lg mb-2 leading-tight line-clamp-2" style={{ minHeight: '3rem' }}>
+            {displayName || "Menu Item"}
+          </h3>
+
+          {/* Description - Fixed height with line-clamp-2 for uniformity */}
+          <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-3" style={{ minHeight: '2.5rem' }}>
+            {displayDescription || "No description"}
+          </p>
+
+          {/* Price - Prominent with fixed position */}
+          <div className="mb-3">
+            <span className="text-orange-600 font-bold text-xl">
+              {formatPrice(item.price)}
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Section: Button - Always at bottom using mt-auto */}
+        <div className="mt-auto pt-2">
+          {currentQuantity > 0 ? (
+            /* Quantity Control - Item already in cart */
+            <div className="flex items-center justify-center gap-3 bg-orange-50 rounded-lg py-2.5 px-4 border border-orange-200">
+              <button
+                onClick={handleDecrement}
+                disabled={item.price <= 0}
+                className="w-9 h-9 flex items-center justify-center bg-white rounded-lg border border-orange-300 hover:bg-orange-100 active:bg-orange-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                aria-label="Decrease quantity"
+              >
+                <Minus className="w-4 h-4 text-orange-600" />
+              </button>
+              
+              <span className="text-orange-600 font-bold text-lg min-w-[2rem] text-center">
+                {currentQuantity}
+              </span>
+              
+              <button
+                onClick={handleIncrement}
+                disabled={item.price <= 0}
+                className="w-9 h-9 flex items-center justify-center bg-white rounded-lg border border-orange-300 hover:bg-orange-100 active:bg-orange-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                aria-label="Increase quantity"
+              >
+                <Plus className="w-4 h-4 text-orange-600" />
+              </button>
+            </div>
+          ) : (
+            /* Add to Cart Button - Item not in cart, always at bottom */
+            <button
+              onClick={handleAddToCart}
+              disabled={item.price <= 0}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg transform active:scale-[0.98] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              type="button"
+            >
+              <ShoppingCart size={20} className="flex-shrink-0" />
+              <span>Tambah ke Keranjang</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

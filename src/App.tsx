@@ -5,6 +5,10 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
+import { PublicMenu } from './components/PublicMenu';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { MenuProvider } from './contexts/MenuContext';
+import { CartProvider } from './contexts/cartcontext';
 
 export default function App() {
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
@@ -12,6 +16,20 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
+        {/* Public Route - Tampilan awal saat npm run dev */}
+        <Route
+          path="/public"
+          element={
+            <LanguageProvider>
+              <MenuProvider>
+                <CartProvider>
+                  <PublicMenu />
+                </CartProvider>
+              </MenuProvider>
+            </LanguageProvider>
+          }
+        />
+
         {/* Auth Routes - Login & Register Page */}
         <Route
           path="/login"
@@ -35,11 +53,11 @@ export default function App() {
           }
         />
 
-        {/* Default route - redirect to admin */}
-        <Route path="/" element={<Navigate to="/admin" replace />} />
+        {/* Default route - redirect to public */}
+        <Route path="/" element={<Navigate to="/public" replace />} />
 
-        {/* Catch all - redirect to admin */}
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        {/* Catch all - redirect to public */}
+        <Route path="*" element={<Navigate to="/public" replace />} />
       </Routes>
     </AuthProvider>
   );

@@ -12,8 +12,7 @@ import Checkout from './CheckoutPage';
 export function PublicMenu({ onBack }: { onBack?: () => void }) {
   const { menuItems, settings, trackView } = useMenu();
   const { language, setLanguage, t } = useLanguage();
-  const { cart, getTotalItems } = useCart();
-  const totalItems = getTotalItems();
+  const { cart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [showCart, setShowCart] = useState(false);
@@ -90,9 +89,9 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
                 aria-label="Shopping cart"
               >
                 <ShoppingCart className="w-5 h-5 text-gray-600" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 animate-pulse">
-                    {totalItems > 99 ? '99+' : totalItems}
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cart.length}
                   </span>
                 )}
               </button>
@@ -130,25 +129,14 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
             <p className="text-gray-500">{t('Belum ada menu tersedia', 'No menu items available')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
-            {sortedItems.map((item) => {
-              const itemName = language === 'id' ? item.name : item.nameEn || item.name;
-              const itemDescription =
-                language === 'id' ? item.description : item.descriptionEn || item.description;
-              const price = `Rp ${item.price.toLocaleString('id-ID')}`;
-
-              return (
-                <MenuCard
-                  key={item.id}
-                  image={item.image || ''}
-                  name={itemName || 'Menu Item'}
-                  description={itemDescription || 'No description'}
-                  price={price}
-                  itemId={item.id}
-                  onAddToCart={() => handleAddToCart(item)}
-                />
-              );
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch justify-items-center">
+            {sortedItems.map((item) => (
+              <MenuCard
+                key={item.id}
+                item={item}
+                language={language}
+              />
+            ))}
           </div>
         )}
       </main>
@@ -207,54 +195,22 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
         </div>
       </footer>
 
-      {/* Cart Sidebar Modal */}
+      {/* Cart Sidebar */}
       {showCart && (
-        <div 
-          className="fixed inset-0 overflow-hidden" 
-          style={{ 
-            zIndex: 9999,
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: 'auto'
-          }}
-        >
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-50 overflow-hidden" style={{ pointerEvents: 'auto' }}>
           <div 
             className="absolute inset-0 bg-black bg-opacity-50 transition-opacity" 
-            onClick={() => setShowCart(false)}
-            style={{ 
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 1
-            }}
+            onClick={() => setShowCart(false)} 
           />
-          
-          {/* Cart Sidebar */}
-          <div 
-            className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col"
-            style={{ 
-              position: 'absolute',
-              zIndex: 2,
-              top: 0,
-              right: 0,
-              height: '100%',
-              maxWidth: '28rem'
-            }}
-          >
+          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between shadow-sm z-10">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10 shadow-sm">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
                   {language === 'id' ? 'Keranjang Belanja' : 'Shopping Cart'}
                 </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  {totalItems} {language === 'id' ? 'item' : 'items'}
+                  {cart.length} {language === 'id' ? 'item' : 'items'}
                 </p>
               </div>
               <button
@@ -265,7 +221,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
                 <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
               <Checkout />
