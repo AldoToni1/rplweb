@@ -1,3 +1,10 @@
+/**
+ * 🎯 Komponen Drag & Drop "Pengurutan Menu"
+ * * Update:
+ * - Tampilan kartu SAMA PERSIS dengan Menu Builder (Gambar w-20, Deskripsi, dll).
+ * - Terhubung ke MenuContext (Data Pusat) agar sinkron.
+ */
+
 'use client';
 
 import { useState } from 'react';
@@ -20,14 +27,15 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { GripVertical, ImageIcon } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card'; // Pastikan import CardContent ada
+import { GripVertical, ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+// 👇 Import Context & Image Component
 import { useMenu, MenuItem } from '../contexts/MenuContext'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 // ============================================
-// 1. KARTU MENU (Updated Style)
+// 1. KARTU MENU (Style SAMA dengan Menu Builder)
 // ============================================
 function SortableMenuCard({ item, isDragging = false }: { item: MenuItem; isDragging?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: isItemDragging } = useSortable({ id: item.id });
@@ -41,83 +49,91 @@ function SortableMenuCard({ item, isDragging = false }: { item: MenuItem; isDrag
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`
-        group relative bg-white rounded-lg border shadow-sm flex items-center gap-3 p-3
-        transition-all duration-200 ease-in-out
-        ${isItemDragging ? 'border-orange-500 shadow-xl scale-105 ring-1 ring-orange-200' : 'border-gray-200 hover:border-gray-300'}
-      `}
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      className={`p-4 relative ${isItemDragging ? 'border-orange-400 shadow-lg' : 'hover:shadow-md transition-shadow'}`}
     >
-      {/* Drag Handle */}
-      <button
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md touch-none flex-shrink-0"
-      >
-        <GripVertical className="size-5" />
-      </button>
+      <div className="flex items-start gap-4">
+        {/* Drag Handle */}
+        <button 
+          className="mt-2 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors" 
+          {...attributes} 
+          {...listeners}
+        >
+          <GripVertical className="size-5 text-gray-400" />
+        </button>
 
-      {/* 🖼️ GAMBAR: Diperkecil (size-10 = 40px) */}
-      <div className="size-10 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200 flex items-center justify-center">
+        {/* 🖼️ GAMBAR: Ukuran disamakan dengan Menu Builder (w-20 h-20) */}
         {item.image ? (
-          <ImageWithFallback 
-            src={item.image} 
-            alt={item.name} 
-            className="size-full object-cover" 
-          />
+          <div className="flex-shrink-0">
+            <ImageWithFallback 
+              src={item.image} 
+              alt={item.name} 
+              className="w-20 h-20 object-cover rounded-lg border border-gray-100" 
+            />
+          </div>
         ) : (
-          <ImageIcon className="text-gray-300 size-5" />
+          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
+            <ImageIcon className="text-gray-300 size-8" />
+          </div>
         )}
-      </div>
 
-      {/* 📝 TEKS: Dikembalikan ke ukuran standar (Bukan kecil) */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center">
-        {/* Nama Menu: Font Normal (text-base) & Tebal */}
-        <h3 className="font-semibold text-gray-900 text-base truncate leading-tight">
-          {item.name}
-        </h3>
-        
-        {/* Harga & Kategori */}
-        <div className="flex items-center gap-2 mt-0.5">
-          {/* Harga: Font agak jelas (text-sm) */}
-          <p className="text-orange-600 font-semibold text-sm">
-            Rp {item.price.toLocaleString('id-ID')}
-          </p>
-          <span className="text-gray-300 text-xs">•</span>
-          {/* Kategori: Font kecil */}
-          <span className="text-gray-500 text-xs truncate bg-gray-100 px-2 py-0.5 rounded-full">
-            {item.category}
-          </span>
+        {/* 📝 KONTEN: Layout sama dengan Menu Builder */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 truncate text-base">{item.name}</h3>
+              {item.nameEn && <p className="text-xs text-gray-500 truncate">{item.nameEn}</p>}
+              <p className="text-orange-600 font-semibold mt-1 text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
+            </div>
+            
+            {/* Badge Urutan (Pojok Kanan) */}
+            <div className="flex-shrink-0 w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">
+               {item.order + 1}
+            </div>
+          </div>
+          
+          {/* Deskripsi & Kategori */}
+          <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.description}</p>
+          <div className="mt-2">
+            <span className="inline-block px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded font-medium border border-orange-100">
+              {item.category}
+            </span>
+          </div>
         </div>
       </div>
-
-      {/* Badge Urutan */}
-      <div className="flex-shrink-0 size-7 bg-orange-50 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold border border-orange-100">
-        {item.order + 1}
-      </div>
-    </div>
+    </Card>
   );
 }
 
 // ============================================
-// 2. DRAG OVERLAY (Tampilan Melayang)
+// 2. DRAG OVERLAY (Tampilan Melayang saat di-drag)
 // ============================================
 function DragOverlayItem({ item }: { item: MenuItem }) {
   return (
-    <div className="bg-white rounded-lg border-2 border-orange-500 shadow-xl p-3 flex items-center gap-3 opacity-95 cursor-grabbing">
-      <GripVertical className="size-5 text-gray-400" />
-      {/* Gambar Kecil */}
-      <div className="size-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
-         {item.image ? <img src={item.image} className="size-full object-cover"/> : null}
+    <Card className="p-4 border-2 border-orange-500 shadow-xl cursor-grabbing opacity-90 bg-white">
+      <div className="flex items-start gap-4">
+        <button className="mt-2 text-gray-400">
+          <GripVertical className="size-5" />
+        </button>
+
+        {item.image ? (
+          <div className="flex-shrink-0">
+             <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
+          </div>
+        ) : (
+           <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+             <ImageIcon className="text-gray-300 size-8" />
+           </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 text-base">{item.name}</h3>
+          <p className="text-orange-600 font-semibold mt-1 text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
+        </div>
       </div>
-      <div>
-        {/* Teks Besar */}
-        <h3 className="font-semibold text-gray-900 text-base">{item.name}</h3>
-        <p className="text-orange-600 font-semibold text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -125,14 +141,16 @@ function DragOverlayItem({ item }: { item: MenuItem }) {
 // 3. KOMPONEN UTAMA
 // ============================================
 export function MenuSorter() {
-  const { menuItems, reorderMenuItems } = useMenu(); 
+  // Menggunakan data dari Context agar sinkron
+  const { menuItems, reorderMenuItems, isLoading } = useMenu(); 
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const sortedItems = [...menuItems].sort((a, b) => a.order - b.order);
+  // Sortir data berdasarkan order sebelum render
+  const sortedItems = [...menuItems].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
+      activationConstraint: { distance: 5 }, // Jarak geser minimal 5px
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -151,51 +169,68 @@ export function MenuSorter() {
       const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
       const newIndex = sortedItems.findIndex((item) => item.id === over.id);
       
+      // Update array lokal untuk animasi smooth
       const newOrderArray = arrayMove(sortedItems, oldIndex, newIndex);
 
+      // Update properti 'order' untuk setiap item
       const updatedItems = newOrderArray.map((item, index) => ({
         ...item,
         order: index,
       }));
 
+      // Simpan ke Context (ini akan update localStorage & UI lain)
       reorderMenuItems(updatedItems);
-      toast.success("Urutan disimpan");
+      toast.success("Urutan menu berhasil diperbarui");
     }
   };
 
   const activeItem = activeId ? sortedItems.find((item) => item.id === activeId) : null;
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Atur Urutan</CardTitle>
+          <CardTitle className="text-lg">Atur Urutan Menu</CardTitle>
           <CardDescription className="text-sm">
-            Geser untuk mengubah posisi menu.
+            Geser kartu menu di bawah ini untuk mengubah urutan tampilannya di halaman pelanggan.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={sortedItems.map((item) => item.id)}
-              strategy={verticalListSortingStrategy}
+          {sortedItems.length === 0 ? (
+            <div className="text-center py-12 text-gray-400 border-2 border-dashed rounded-lg bg-gray-50">
+              Belum ada menu untuk diurutkan. Silakan tambah menu terlebih dahulu.
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             >
-              <div className="space-y-2">
-                {sortedItems.map((item) => (
-                  <SortableMenuCard key={item.id} item={item} />
-                ))}
-              </div>
-            </SortableContext>
+              <SortableContext
+                items={sortedItems.map((item) => item.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3"> {/* Jarak antar kartu (space-y-3) sama dengan Builder */}
+                  {sortedItems.map((item) => (
+                    <SortableMenuCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </SortableContext>
 
-            <DragOverlay>
-              {activeItem ? <DragOverlayItem item={activeItem} /> : null}
-            </DragOverlay>
-          </DndContext>
+              <DragOverlay>
+                {activeItem ? <DragOverlayItem item={activeItem} /> : null}
+              </DragOverlay>
+            </DndContext>
+          )}
         </CardContent>
       </Card>
     </div>
