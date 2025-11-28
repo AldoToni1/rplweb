@@ -48,6 +48,7 @@ export function MenuCard({ item, language = 'id' }: MenuCardProps) {
   };
 
   return (
+<<<<<<< HEAD
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-gray-200 flex flex-col h-full overflow-hidden max-w-[350px] w-full mx-auto">
       {/* Image Section - Fixed Height at Top */}
       <div className="aspect-video overflow-hidden bg-gray-100 flex-shrink-0 w-full relative rounded-t-xl">
@@ -129,6 +130,29 @@ export function MenuCard({ item, language = 'id' }: MenuCardProps) {
             </button>
           )}
         </div>
+=======
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      <div className="aspect-[4/3] overflow-hidden">
+        <ImageWithFallback
+          src={image}
+          alt={name}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-gray-900">{name}</h3>
+          <span className="text-amber-600 whitespace-nowrap ml-2">{price}</span>
+        </div>
+        <p className="text-gray-600 mb-4">{description}</p>
+        <button
+          onClick={onOrderClick}
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+        >
+          <MessageCircle className="w-5 h-5" />
+          {whatsappLabel}
+        </button>
+>>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
       </div>
     </div>
   );

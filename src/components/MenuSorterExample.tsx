@@ -1,6 +1,6 @@
 /**
  * 📝 Contoh Penggunaan MenuSorter
- * 
+ *
  * File ini menunjukkan berbagai cara menggunakan komponen MenuSorter
  * Bisa dijadikan referensi atau langsung digunakan
  */
@@ -9,13 +9,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { MenuSorter } from './MenuSorter';
+<<<<<<< HEAD
 import { useMenu } from '../contexts/MenuContext';
 import type { MenuItem as MenuSorterItem } from './MenuSorter';
 import type { MenuItem as ContextMenuItem } from '../contexts/MenuContext';
+=======
+import { useMenu, MenuItem } from '../contexts/MenuContext';
+import { useState, useEffect } from 'react';
+>>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
 /**
  * Contoh 1: MenuSorter Standalone (dengan dummy data)
- * 
+ *
  * Gunakan ini jika ingin menggunakan komponen dengan data sendiri
  */
 export function MenuSorterStandalone() {
@@ -28,32 +33,28 @@ export function MenuSorterStandalone() {
 
 /**
  * Contoh 2: MenuSorter dengan MenuContext Integration
- * 
+ *
  * Gunakan ini jika ingin sync dengan MenuContext yang sudah ada
  */
 export function MenuSorterWithContext() {
   const { menuItems, reorderMenuItems } = useMenu();
-  const [items, setItems] = useState<MenuSorterItem[]>([]);
+  const [items, setItems] = useState<MenuItem[]>([]);
 
   // Convert MenuContext items ke format MenuSorter
   useEffect(() => {
     const converted = menuItems.map((item, index) => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      category: item.category,
-      image: item.image,
+      ...item,
       order: item.order ?? index,
     }));
     setItems(converted);
   }, [menuItems]);
 
   // Handler untuk sync dengan MenuContext
-  const handleOrderChange = async (newItems: MenuSorterItem[]) => {
+  const handleOrderChange = async (newItems: MenuItem[]) => {
     setItems(newItems);
-    
+
     // Convert kembali ke format MenuContext
-    const contextItems: ContextMenuItem[] = newItems.map((item) => {
+    const contextItems: MenuItem[] = newItems.map((item) => {
       const original = menuItems.find((m) => m.id === item.id);
       return {
         ...original!,
@@ -71,8 +72,8 @@ export function MenuSorterWithContext() {
     <div className="container mx-auto px-4 py-8">
       <MenuSorter />
       <p className="mt-4 text-sm text-gray-600">
-        Note: Untuk integrasi penuh dengan MenuContext, modifikasi MenuSorter
-        agar menerima props items dan onOrderChange
+        Note: Untuk integrasi penuh dengan MenuContext, modifikasi MenuSorter agar menerima props items dan
+        onOrderChange
       </p>
     </div>
   );
@@ -80,10 +81,10 @@ export function MenuSorterWithContext() {
 
 /**
  * Contoh 3: Custom Save Function
- * 
+ *
  * Contoh bagaimana membuat custom save function
  */
-export async function customSaveOrder(items: MenuSorterItem[]): Promise<void> {
+export async function customSaveOrder(items: MenuItem[]): Promise<void> {
   try {
     // Contoh: Save ke Supabase
     const response = await fetch('/api/menu/reorder', {
@@ -113,10 +114,10 @@ export async function customSaveOrder(items: MenuSorterItem[]): Promise<void> {
 
 /**
  * Contoh 4: Load Data dari API
- * 
+ *
  * Contoh bagaimana load data dari API external
  */
-export async function loadMenuFromAPI(): Promise<MenuSorterItem[]> {
+export async function loadMenuFromAPI(): Promise<MenuItem[]> {
   try {
     const response = await fetch('https://api-anda.com/menus');
     const data = await response.json();
@@ -134,4 +135,3 @@ export async function loadMenuFromAPI(): Promise<MenuSorterItem[]> {
     return [];
   }
 }
-

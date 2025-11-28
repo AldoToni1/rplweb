@@ -1,8 +1,15 @@
 'use client';
+<<<<<<< HEAD
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getAllMenus, createMenu, updateMenu, deleteMenu, updateMenuOrder } from '../lib/services/menuService';
 import { getAnalyticsSummary, trackOverallView, trackMenuView } from '../lib/services/analyticsService';
+=======
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getAllMenus, createMenu, updateMenu, deleteMenu } from '../lib/services/menuService';
+import type { MenuItemWithPhotos } from '../lib/services/menuService';
+>>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
+// --- Tipe Data ---
 export interface MenuItem {
   id: string;
   name: string;
@@ -12,8 +19,9 @@ export interface MenuItem {
   descriptionEn?: string;
   category: string;
   image?: string;
+  photos?: string[];
   order: number;
-   template?: string; // ✅ ganti theme → template
+  template?: string;
 }
 
 export interface MenuSettings {
@@ -21,6 +29,9 @@ export interface MenuSettings {
   restaurantNameEn?: string;
   whatsappNumber: string;
   template: 'minimalist' | 'colorful' | 'elegant' | 'modern';
+  // Field tambahan untuk kompatibilitas dengan kode UI lama
+  openHours?: string;
+  address?: ReactNode;
 }
 
 interface Analytics {
@@ -45,92 +56,121 @@ interface MenuContextType {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
-const STORAGE_KEYS = {
-  MENU_ITEMS: 'menuKu_items',
-  SETTINGS: 'menuKu_settings',
-  ANALYTICS: 'menuKu_analytics',
+// 🔑 STORAGE KEY UNTUK SETTINGS (hanya settings yang disimpan di localStorage)
+const STORAGE_KEY_SETTINGS = 'menuKu_settings';
+const STORAGE_KEY_ANALYTICS = 'menuKu_analytics';
+
+// DEFAULT SETTINGS (akan digunakan jika localStorage kosong)
+const DEFAULT_SETTINGS: MenuSettings = {
+  restaurantName: 'DSAI Kitchen',
+  restaurantNameEn: 'DSAI Kitchen',
+  whatsappNumber: '628123456789',
+  template: 'modern',
+  openHours: '10:00 - 22:00',
+  address: 'Your Restaurant Address',
 };
 
 export function MenuProvider({ children }: { children: ReactNode }) {
+  // Load menu items dari Supabase (bukan dummy data)
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  // Settings dari localStorage (user settings, bukan data menu)
+  const [settings, setSettings] = useState<MenuSettings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
+      const parsed = saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+
+      // Migrasi: Update nama lama "Rumah Makan Saya" ke DSAI Kitchen
+      if (parsed.restaurantName === 'Rumah Makan Saya' || parsed.restaurantName === 'Restaurant Name') {
+        parsed.restaurantName = 'DSAI Kitchen';
+      }
+      if (parsed.restaurantNameEn === 'My Restaurant' || parsed.restaurantNameEn === 'Restaurant Name') {
+        parsed.restaurantNameEn = 'DSAI Kitchen';
+      }
+
+      return parsed;
+    }
+    return DEFAULT_SETTINGS;
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [settings, setSettings] = useState<MenuSettings>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return stored
-      ? JSON.parse(stored)
-      : {
-          restaurantName: 'Rumah Makan Saya',
-          restaurantNameEn: 'My Restaurant',
-          whatsappNumber: '6281227281923',
-          template: 'minimalist',
-        };
-  });
-
   const [analytics, setAnalytics] = useState<Analytics>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.ANALYTICS);
-    return stored
-      ? JSON.parse(stored)
-      : {
-          totalViews: 0,
-          itemViews: {},
-          lastViewed: new Date().toISOString(),
-        };
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_ANALYTICS);
+      return saved
+        ? JSON.parse(saved)
+        : {
+            totalViews: 0,
+            itemViews: {},
+            lastViewed: new Date().toISOString(),
+          };
+    }
+    return {
+      totalViews: 0,
+      itemViews: {},
+      lastViewed: new Date().toISOString(),
+    };
   });
 
-  // Load initial data from Supabase
+  // --- FETCH DATA DARI SUPABASE ---
   useEffect(() => {
-    const loadData = async () => {
+    const loadMenusFromSupabase = async () => {
       try {
         setIsLoading(true);
         setError(null);
-
-        // Load menus from Supabase
         const menus = await getAllMenus();
-        setMenuItems(menus.sort((a, b) => a.order - b.order));
-        // setMenuItems(menus);
-
-        // Load analytics from Supabase
-        const analyticsSummary = await getAnalyticsSummary();
-        setAnalytics({
-          totalViews: analyticsSummary.totalViews,
-          itemViews: analyticsSummary.itemViews,
-          lastViewed: new Date().toISOString(),
-        });
+        setMenuItems(menus as MenuItem[]);
       } catch (err) {
-        console.error('Error loading data:', err);
-        setError('Failed to load menu data');
-        // Fallback to localStorage if Supabase fails
-        const stored = localStorage.getItem(STORAGE_KEYS.MENU_ITEMS);
-        if (stored) {
-          setMenuItems(JSON.parse(stored));
-        }
+        console.error('Error loading menus from Supabase:', err);
+        setError('Gagal memuat menu dari database. Pastikan Supabase sudah dikonfigurasi dengan benar.');
+        setMenuItems([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
+    loadMenusFromSupabase();
   }, []);
 
+  // --- AUTO-SAVE: Simpan settings ke LocalStorage setiap kali berubah ---
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
   }, [settings]);
+
+  // --- AUTO-SAVE: Simpan analytics ke LocalStorage setiap kali berubah ---
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY_ANALYTICS, JSON.stringify(analytics));
+    }
+  }, [analytics]);
+
+  // --- SYNC ANTAR TAB: Biar Admin & Public View nyambung real-time ---
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY_SETTINGS && event.newValue) {
+        console.log('Syncing settings from other tab...');
+        setSettings(JSON.parse(event.newValue));
+      }
+      if (event.key === STORAGE_KEY_ANALYTICS && event.newValue) {
+        console.log('Syncing analytics from other tab...');
+        setAnalytics(JSON.parse(event.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // --- CRUD ACTIONS: SUPABASE BACKEND ---
 
   const addMenuItem = async (item: Omit<MenuItem, 'id' | 'order'>) => {
     try {
       setError(null);
       const newItem = await createMenu(item);
-      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
-      setMenuItems((prevItems) => {
-        const updatedItems = [...prevItems, newItem];
-        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(updatedItems));
-        return updatedItems;
-      });
+      setMenuItems((prev) => [...prev, newItem as MenuItem]);
     } catch (err) {
       console.error('Error adding menu item:', err);
-      setError('Failed to add menu item');
+      setError('Gagal menambah menu ke database.');
       throw err;
     }
   };
@@ -138,16 +178,11 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
     try {
       setError(null);
-      const updated = await updateMenu(id, updates);
-      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
-      setMenuItems((prevItems) => {
-        const newItems = prevItems.map((item) => (item.id === id ? updated : item));
-        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
-        return newItems;
-      });
+      const updatedItem = await updateMenu(id, updates);
+      setMenuItems((prev) => prev.map((item) => (item.id === id ? ({ ...updatedItem } as MenuItem) : item)));
     } catch (err) {
       console.error('Error updating menu item:', err);
-      setError('Failed to update menu item');
+      setError('Gagal mengupdate menu di database.');
       throw err;
     }
   };
@@ -156,19 +191,15 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       await deleteMenu(id);
-      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
-      setMenuItems((prevItems) => {
-        const newItems = prevItems.filter((item) => item.id !== id);
-        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
-        return newItems;
-      });
+      setMenuItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.error('Error deleting menu item:', err);
-      setError('Failed to delete menu item');
+      setError('Gagal menghapus menu dari database.');
       throw err;
     }
   };
 
+<<<<<<< HEAD
   // Di dalam MenuContext.tsx
 
 const reorderMenuItems = async (items: MenuItem[]) => {
@@ -204,33 +235,41 @@ const reorderMenuItems = async (items: MenuItem[]) => {
   //     throw err;
   //   }
   // };
+=======
+  const reorderMenuItems = async (items: MenuItem[]) => {
+    try {
+      setError(null);
+      // Update urutan di Supabase (dengan order field)
+      await Promise.all(items.map((item, index) => updateMenu(item.id, { ...item, order: index } as any)));
+      setMenuItems(items);
+    } catch (err) {
+      console.error('Error reordering menu items:', err);
+      setError('Gagal mengubah urutan menu di database.');
+      throw err;
+    }
+  };
+>>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
   const updateSettings = (updates: Partial<MenuSettings>) => {
-    setSettings({ ...settings, ...updates });
+    setSettings((prev) => ({ ...prev, ...updates }));
   };
 
   const trackView = async (itemId?: string) => {
     try {
-      setAnalytics((prev) => {
-        const newAnalytics = {
-          totalViews: prev.totalViews + 1,
-          itemViews: { ...prev.itemViews },
-          lastViewed: new Date().toISOString(),
-        };
+      // Update total views
+      setAnalytics((prev) => ({
+        ...prev,
+        totalViews: prev.totalViews + 1,
+        lastViewed: new Date().toISOString(),
+        itemViews: itemId
+          ? {
+              ...prev.itemViews,
+              [itemId]: (prev.itemViews[itemId] || 0) + 1,
+            }
+          : prev.itemViews,
+      }));
 
-        if (itemId) {
-          newAnalytics.itemViews[itemId] = (prev.itemViews[itemId] || 0) + 1;
-        }
-
-        return newAnalytics;
-      });
-
-      // Track in Supabase
-      if (itemId) {
-        await trackMenuView(itemId);
-      } else {
-        await trackOverallView();
-      }
+      console.log('View tracked:', itemId || 'Overall');
     } catch (err) {
       console.error('Error tracking view:', err);
     }
@@ -264,43 +303,3 @@ export function useMenu() {
   }
   return context;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -6,7 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { Loader2, AlertCircle, Eye, EyeOff, Menu } from 'lucide-react';
+// ✅ UPDATE: Import Building2, hapus Menu
+import { Loader2, AlertCircle, Eye, EyeOff, Building2 } from 'lucide-react';
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -58,15 +59,17 @@ export function Login({ onSwitchToRegister }: LoginProps) {
 
       <Card className="w-full max-w-md shadow-xl border-0 relative z-10">
         <CardHeader className="space-y-2 text-center">
-          {/* Logo */}
+          {/* Logo Container */}
           <div className="flex justify-center mb-4">
             <div className="bg-gradient-to-br from-orange-500 to-yellow-500 p-3 rounded-lg shadow-lg">
-              <Menu className="size-8 text-white" />
+              {/* ✅ UPDATE: Menggunakan Icon Gedung (Building2) */}
+              <Building2 className="size-8 text-white" />
             </div>
           </div>
 
+          {/* ✅ UPDATE: Judul Aplikasi */}
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
-            MenuKu Digital
+            DSAI Kitchen
           </CardTitle>
           <CardDescription className="text-base text-gray-600">Masuk ke akun Anda untuk mengelola menu</CardDescription>
         </CardHeader>
@@ -156,7 +159,7 @@ export function Login({ onSwitchToRegister }: LoginProps) {
           {/* Demo Info */}
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-800">
-              <strong>Tip:</strong> Gunakan Supabase Auth untuk login. Pastikan Anda sudah mendaftar terlebih dahulu.
+              <strong>Tip:</strong> Gunakan email dummy jika hanya ingin mencoba fitur offline (LocalStorage).
             </p>
           </div>
         </CardContent>
