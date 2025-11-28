@@ -73,7 +73,7 @@ export default function TemplateSelector({ settings, setSettings }: TemplateSele
                 id="restaurantName"
                 value={settings.restaurantName}
                 onChange={(e) => setSettings({ ...settings, restaurantName: e.target.value })}
-                placeholder="Warung Makan Bahagia"
+                placeholder="DSAI Kitchen"
               />
             </div>
             <div className="space-y-2">
@@ -82,7 +82,7 @@ export default function TemplateSelector({ settings, setSettings }: TemplateSele
                 id="restaurantNameEn"
                 value={settings.restaurantNameEn}
                 onChange={(e) => setSettings({ ...settings, restaurantNameEn: e.target.value })}
-                placeholder="Happy Food Restaurant"
+                placeholder="DSAI Kitchen"
               />
             </div>
           </div>
@@ -138,5 +138,5 @@ export default function TemplateSelector({ settings, setSettings }: TemplateSele
         </CardContent>
       </Card>
     </div>
-  );  
+  );
 }

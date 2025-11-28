@@ -56,8 +56,8 @@ const STORAGE_KEY_ANALYTICS = 'menuKu_analytics';
 
 // DEFAULT SETTINGS (akan digunakan jika localStorage kosong)
 const DEFAULT_SETTINGS: MenuSettings = {
-  restaurantName: 'Restaurant Name',
-  restaurantNameEn: 'Restaurant Name',
+  restaurantName: 'DSAI Kitchen',
+  restaurantNameEn: 'DSAI Kitchen',
   whatsappNumber: '628123456789',
   template: 'modern',
   openHours: '10:00 - 22:00',
@@ -72,7 +72,17 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<MenuSettings>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
-      return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+      const parsed = saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+
+      // Migrasi: Update nama lama "Rumah Makan Saya" ke DSAI Kitchen
+      if (parsed.restaurantName === 'Rumah Makan Saya' || parsed.restaurantName === 'Restaurant Name') {
+        parsed.restaurantName = 'DSAI Kitchen';
+      }
+      if (parsed.restaurantNameEn === 'My Restaurant' || parsed.restaurantNameEn === 'Restaurant Name') {
+        parsed.restaurantNameEn = 'DSAI Kitchen';
+      }
+
+      return parsed;
     }
     return DEFAULT_SETTINGS;
   });

@@ -50,7 +50,7 @@ export function TemplateSelection() {
               id="restaurantName"
               value={settings.restaurantName}
               onChange={(e) => updateSettings({ restaurantName: e.target.value })}
-              placeholder="Rumah Makan Saya"
+              placeholder="DSAI Kitchen"
             />
           </div>
           <div className="space-y-2">
@@ -59,7 +59,7 @@ export function TemplateSelection() {
               id="restaurantNameEn"
               value={settings.restaurantNameEn || ''}
               onChange={(e) => updateSettings({ restaurantNameEn: e.target.value })}
-              placeholder="My Restaurant"
+              placeholder="DSAI Kitchen"
             />
           </div>
           <div className="space-y-2">
