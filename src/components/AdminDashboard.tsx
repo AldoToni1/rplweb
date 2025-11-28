@@ -45,12 +45,11 @@ export default function AdminDashboard() {
     <LanguageProvider>
       <MenuProvider>
         {/* TAMPILAN PUBLIC VIEW */}
-        {(isPublicView || showPublicView) ? (
+        {isPublicView || showPublicView ? (
           <PublicMenu onBack={() => setShowPublicView(false)} />
         ) : (
           /* TAMPILAN ADMIN DASHBOARD */
           <div className="min-h-screen bg-gray-50/50">
-            
             {/* 1. HEADER (LOGO & USER INFO) */}
             <header className="bg-white border-b border-gray-200">
               <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -78,9 +77,9 @@ export default function AdminDashboard() {
 
                   <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
 
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="hidden sm:flex gap-2 border-gray-200 text-gray-600 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50"
                     onClick={() => setShowPublicView(true)}
                   >
@@ -88,8 +87,8 @@ export default function AdminDashboard() {
                     <span className="hidden lg:inline">Lihat Menu</span>
                   </Button>
 
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="icon"
                     onClick={handleLogout}
                     className="text-gray-400 hover:text-red-600 hover:bg-red-50"
@@ -108,16 +107,17 @@ export default function AdminDashboard() {
                   {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
-                    
+
                     return (
                       <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
                         className={`
                           flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0
-                          ${isActive 
-                            ? 'bg-gray-900 text-white shadow-md' 
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ${
+                            isActive
+                              ? 'bg-gray-900 text-white shadow-md'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                           }
                         `}
                       >
