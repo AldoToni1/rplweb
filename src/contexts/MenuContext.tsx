@@ -1,13 +1,7 @@
 'use client';
-<<<<<<< HEAD
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getAllMenus, createMenu, updateMenu, deleteMenu, updateMenuOrder } from '../lib/services/menuService';
-import { getAnalyticsSummary, trackOverallView, trackMenuView } from '../lib/services/analyticsService';
-=======
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getAllMenus, createMenu, updateMenu, deleteMenu } from '../lib/services/menuService';
 import type { MenuItemWithPhotos } from '../lib/services/menuService';
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
 // --- Tipe Data ---
 export interface MenuItem {
@@ -199,43 +193,6 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }
   };
 
-<<<<<<< HEAD
-  // Di dalam MenuContext.tsx
-
-const reorderMenuItems = async (items: MenuItem[]) => {
-  try {
-    setError(null);
-    // Update state lokal dulu biar UI responsif
-    const reordered = items.map((item, index) => ({ ...item, order: index }));
-    setMenuItems(reordered);
-    localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
-
-    // Update order di Supabase menggunakan fungsi bulk update
-    await updateMenuOrder(reordered.map((item) => ({ id: item.id, order: item.order })));
-  } catch (err) {
-    console.error('Error reordering menu items:', err);
-    setError('Failed to reorder menu items');
-    // Opsional: kembalikan state jika gagal (rollback)
-    throw err;
-  }
-};
-
-  // const reorderMenuItems = async (items: MenuItem[]) => {
-  //   try {
-  //     setError(null);
-  //     const reordered = items.map((item, index) => ({ ...item, order: index }));
-  //     setMenuItems(reordered);
-  //     localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
-
-  //     // Update order in Supabase
-  //     await Promise.all(reordered.map((item) => updateMenu(item.id, { order: item.order })));
-  //   } catch (err) {
-  //     console.error('Error reordering menu items:', err);
-  //     setError('Failed to reorder menu items');
-  //     throw err;
-  //   }
-  // };
-=======
   const reorderMenuItems = async (items: MenuItem[]) => {
     try {
       setError(null);
@@ -248,7 +205,6 @@ const reorderMenuItems = async (items: MenuItem[]) => {
       throw err;
     }
   };
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
   const updateSettings = (updates: Partial<MenuSettings>) => {
     setSettings((prev) => ({ ...prev, ...updates }));

@@ -1,15 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { useLanguage } from '../contexts/LanguageContext';
-<<<<<<< HEAD
-import { useCart } from '../contexts/cartcontext';
-import { LanguageToggle } from './LanguageToggle';
-import { CategoryChip } from './CategoryChip';
-import { MenuCard } from './MenuCard';
-import { Moon, Sun, Instagram, Facebook, MapPin, Clock, ArrowLeft, ShoppingCart, X } from 'lucide-react';
-import { Button } from './ui/button';
-import Checkout from './CheckoutPage';
-=======
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import {
@@ -35,21 +26,14 @@ interface CartItem {
   item: any;
   quantity: number;
 }
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
 export function PublicMenu({ onBack }: { onBack?: () => void }) {
   const { menuItems, settings, trackView, isLoading, error } = useMenu();
   const { language, setLanguage, t } = useLanguage();
-  const { cart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-<<<<<<< HEAD
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [showCart, setShowCart] = useState(false);
-=======
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
   useEffect(() => {
     trackView();
@@ -75,10 +59,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
 
   const sortedItems = [...filteredItems].sort((a, b) => a.order - b.order);
 
-<<<<<<< HEAD
-  const handleAddToCart = (item: any) => {
-    trackView(item.id);
-=======
   const addToCart = (item: any) => {
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.item.id === item.id);
@@ -89,7 +69,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
       }
       return [...prev, { item, quantity: 1 }];
     });
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
@@ -200,27 +179,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
             ${darkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-slate-600'}
           `}
               >
-<<<<<<< HEAD
-                {theme === 'light' ? (
-                  <Moon className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <Sun className="w-5 h-5 text-gray-600" />
-                )}
-              </button>
-              {/* Cart Icon */}
-              <button
-                onClick={() => setShowCart(true)}
-                className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="Shopping cart"
-              >
-                <ShoppingCart className="w-5 h-5 text-gray-600" />
-                {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {cart.length}
-                  </span>
-                )}
-              </button>
-=======
                 <Globe className="size-4 mr-2" />
                 <span className="hidden sm:inline">{language === 'id' ? 'ID' : 'EN'}</span>
               </Button>
@@ -265,7 +223,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
                   </span>
                 </Button>
               )}
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
             </div>
           </div>
         </div>
@@ -370,16 +327,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
             </p>
           </motion.div>
         ) : (
-<<<<<<< HEAD
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch justify-items-center">
-            {sortedItems.map((item) => (
-              <MenuCard
-                key={item.id}
-                item={item}
-                language={language}
-              />
-            ))}
-=======
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
             <AnimatePresence mode="popLayout">
               {sortedItems.map((item, index) => (
@@ -494,7 +441,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
                 </motion.div>
               ))}
             </AnimatePresence>
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
           </div>
         )}
       </main>
@@ -552,51 +498,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
         </div>
       </footer>
 
-<<<<<<< HEAD
-      {/* Cart Sidebar */}
-      {showCart && (
-        <div className="fixed inset-0 z-50 overflow-hidden" style={{ pointerEvents: 'auto' }}>
-          <div 
-            className="absolute inset-0 bg-black bg-opacity-50 transition-opacity" 
-            onClick={() => setShowCart(false)} 
-          />
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10 shadow-sm">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {language === 'id' ? 'Keranjang Belanja' : 'Shopping Cart'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {cart.length} {language === 'id' ? 'item' : 'items'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCart(false)}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="Close cart"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <Checkout />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-=======
       {/* Cart Sidebar - Refined */}
       <AnimatePresence>
         {showCart && (
@@ -777,7 +678,6 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
           </>
         )}
       </AnimatePresence>
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
     </div>
   );
 }

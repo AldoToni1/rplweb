@@ -5,7 +5,8 @@ import { MenuBuilder } from './MenuBuilder';
 import { TemplateSelection } from './TemplateSelection';
 import { MenuPreview } from './MenuPreview';
 import { Analytics } from './Analytics';
-import MenuSorting from './MenuSorting';
+import { PublicMenu } from './PublicMenu';
+import { MenuSorter } from './MenuSorter';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { MenuProvider } from '../contexts/MenuContext';
 // ✅ Ikon Lengkap
@@ -15,6 +16,7 @@ import { Toaster } from './ui/sonner';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('builder');
+  const [showPublicView, setShowPublicView] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
 
@@ -27,19 +29,7 @@ export default function AdminDashboard() {
     }
   };
 
-<<<<<<< HEAD
-  const handleViewPublic = () => {
-    // Navigate to public route in new tab
-    window.open('/public', '_blank');
-  };
-
-  // All navigation items
-=======
-  const urlParams = new URLSearchParams(window.location.search);
-  const isPublicView = urlParams.get('view') === 'public';
-
   // Navigasi Menu
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
   const navItems = [
     { id: 'builder', label: 'Menu Builder', icon: LayoutDashboard },
     { id: 'sorter', label: 'Urutkan Menu', icon: GripVertical },
@@ -52,7 +42,7 @@ export default function AdminDashboard() {
     <LanguageProvider>
       <MenuProvider>
         {/* TAMPILAN PUBLIC VIEW */}
-        {isPublicView || showPublicView ? (
+        {showPublicView ? (
           <PublicMenu onBack={() => setShowPublicView(false)} />
         ) : (
           /* TAMPILAN ADMIN DASHBOARD */
@@ -74,83 +64,6 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-<<<<<<< HEAD
-                {/* Navigation - SELALU HORIZONTAL */}
-                <nav
-                  className="flex items-center gap-1 relative z-[101] overflow-x-auto overflow-y-hidden"
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'nowrap',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch',
-                  }}
-                >
-                  {/* Menu Items */}
-                  <div className="flex items-center gap-1 flex-row flex-nowrap min-w-max">
-                    {navItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveTab(item.id)}
-                          className={`
-                            flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all
-                            whitespace-nowrap relative z-[102] flex-shrink-0
-                            ${
-                              activeTab === item.id
-                                ? 'bg-orange-100 text-orange-700 shadow-sm'
-                                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                            }
-                          `}
-                          style={{
-                            pointerEvents: 'auto',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'nowrap',
-                          }}
-                        >
-                          <Icon className="size-4 flex-shrink-0" />
-                          <span className="hidden lg:inline">{item.label}</span>
-                          <span className="lg:hidden">{item.label.split(' ')[0]}</span>
-                        </button>
-                      );
-                    })}
-
-                    {/* View Public Menu Button */}
-                    <Button
-                      onClick={handleViewPublic}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 ml-2 relative z-[102] flex-shrink-0"
-                      style={{
-                        pointerEvents: 'auto',
-                        display: 'flex',
-                        flexDirection: 'row',
-                        flexWrap: 'nowrap',
-                      }}
-                    >
-                      <Eye className="size-4" />
-                      <span className="hidden sm:inline">View Public</span>
-                      <span className="sm:hidden">View</span>
-                    </Button>
-
-                    {/* User Info & Logout */}
-                    <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
-                      <div className="hidden sm:flex flex-col items-end text-sm">
-                        <p className="font-medium text-gray-700 truncate">{user?.email}</p>
-                      </div>
-                      <Button
-                        onClick={handleLogout}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <LogOut className="size-4" />
-                        <span className="hidden sm:inline">Logout</span>
-                      </Button>
-                    </div>
-=======
                 {/* KANAN: User Actions */}
                 <div className="flex items-center gap-4">
                   <div className="hidden md:flex flex-col items-end mr-2 animate-in fade-in slide-in-from-right-4 duration-700">
@@ -160,7 +73,6 @@ export default function AdminDashboard() {
                     <span className="text-sm font-bold text-gray-800 max-w-[150px] truncate leading-none block">
                       {user?.email?.split('@')[0]}
                     </span>
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
                   </div>
 
                   <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
@@ -244,38 +156,11 @@ export default function AdminDashboard() {
                 {activeTab === 'preview' && <MenuPreview />}
                 {activeTab === 'analytics' && <Analytics />}
               </div>
-<<<<<<< HEAD
-            )}
-            {activeTab === 'sorter' && (
-              <div className="space-y-6">
-                <MenuSorting />
-              </div>
-            )}
-            {activeTab === 'template' && (
-              <div className="space-y-6">
-                <TemplateSelection />
-              </div>
-            )}
-            {activeTab === 'preview' && (
-              <div className="space-y-6">
-                <MenuPreview />
-              </div>
-            )}
-            {activeTab === 'analytics' && (
-              <div className="space-y-6">
-                <Analytics />
-              </div>
-            )}
-          </main>
-          <Toaster />
-        </div>
-=======
             </main>
 
             <Toaster />
           </div>
         )}
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
       </MenuProvider>
     </LanguageProvider>
   );

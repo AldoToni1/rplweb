@@ -9,14 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MenuSorter } from './MenuSorter';
-<<<<<<< HEAD
-import { useMenu } from '../contexts/MenuContext';
-import type { MenuItem as MenuSorterItem } from './MenuSorter';
-import type { MenuItem as ContextMenuItem } from '../contexts/MenuContext';
-=======
 import { useMenu, MenuItem } from '../contexts/MenuContext';
-import { useState, useEffect } from 'react';
->>>>>>> 4175ef567446cd27af733bdd6ff23c256d2e25d3
 
 /**
  * Contoh 1: MenuSorter Standalone (dengan dummy data)
