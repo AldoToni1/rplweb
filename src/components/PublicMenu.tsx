@@ -4,37 +4,64 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { CategoryChip } from './CategoryChip';
 import { MenuCard } from './MenuCard';
-import { Moon, Sun, Instagram, Facebook, MapPin, Clock, ArrowLeft } from 'lucide-react';
+import { Moon, Sun, Instagram, Facebook, MapPin, Clock, ArrowLeft, Share2 } from 'lucide-react';
 import { Button } from './ui/button';
+
+// --- KONFIGURASI TEMA ---
+const THEMES = {
+  minimalist: {
+    bg: 'bg-gray-50',
+    header: 'bg-white border-b border-gray-200',
+    headerText: 'text-gray-900',
+    subText: 'text-gray-500',
+    categoryBg: 'bg-white border-b border-gray-200',
+    footer: 'bg-gray-900 text-white',
+  },
+  colorful: {
+    bg: 'bg-orange-50/50',
+    header: 'bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 text-white shadow-md',
+    headerText: 'text-white',
+    subText: 'text-orange-100',
+    categoryBg: 'bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky',
+    footer: 'bg-gradient-to-br from-orange-600 to-purple-700 text-white',
+  },
+  elegant: {
+    bg: 'bg-stone-900',
+    header: 'bg-stone-950 border-b border-stone-800',
+    headerText: 'text-amber-500',
+    subText: 'text-stone-400',
+    categoryBg: 'bg-stone-950/90 backdrop-blur border-b border-stone-800',
+    footer: 'bg-black text-amber-500 border-t border-stone-800',
+  },
+  modern: {
+    bg: 'bg-slate-50',
+    header: 'bg-blue-600 text-white shadow-lg',
+    headerText: 'text-white',
+    subText: 'text-blue-100',
+    categoryBg: 'bg-white shadow-sm border-b border-blue-100',
+    footer: 'bg-slate-800 text-white',
+  },
+};
 
 export function PublicMenu({ onBack }: { onBack?: () => void }) {
   const { menuItems, settings, trackView } = useMenu();
   const { language, setLanguage, t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
+  // Default ke 'minimalist' jika setting tidak ditemukan
+  const activeTheme = THEMES[settings.template || 'minimalist'];
 
   useEffect(() => {
     trackView();
   }, []);
 
-  const handleItemClick = (itemId: string) => {
-    trackView(itemId);
-  };
-
   const categories = ['all', ...Array.from(new Set(menuItems.map((item) => item.category)))];
-
-  const categoryLabels: Record<string, { id: string; en: string }> = {
-    all: { id: 'Semua', en: 'All' },
-    food: { id: 'Makanan', en: 'Food' },
-    drinks: { id: 'Minuman', en: 'Drinks' },
-    coffee: { id: 'Kopi', en: 'Coffee' },
-    dessert: { id: 'Dessert', en: 'Dessert' },
-  };
 
   const filteredItems =
     selectedCategory === 'all' ? menuItems : menuItems.filter((item) => item.category === selectedCategory);
 
-  const sortedItems = [...filteredItems].sort((a, b) => a.order - b.order);
+  // Sortir berdasarkan order
+  const sortedItems = [...filteredItems].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   const handleOrderClick = (item: any) => {
     const itemName = language === 'id' ? item.name : item.nameEn || item.name;
@@ -55,74 +82,80 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
   const orderViaWhatsApp = language === 'id' ? 'Pesan via WhatsApp' : 'Order via WhatsApp';
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    // 🔥 Terapkan Background Tema
+    <div className={`min-h-screen transition-colors duration-300 ${activeTheme.bg}`}>
+      
+      {/* --- HEADER --- */}
+      <header className={`sticky top-0 z-50 transition-colors duration-300 ${activeTheme.header}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {onBack && (
                 <button
                   onClick={onBack}
-                  className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+                  className={`flex items-center gap-2 transition-colors ${activeTheme.headerText} opacity-90 hover:opacity-100`}
                 >
                   <ArrowLeft className="w-5 h-5" />
                   <span className="text-sm font-medium">{t('Kembali', 'Back')}</span>
                 </button>
               )}
-              <h1 className="text-gray-900 text-lg sm:text-xl font-semibold">
-                {restaurantName}
-              </h1>
+              <div className="flex flex-col">
+                <h1 className={`text-lg sm:text-xl font-bold ${activeTheme.headerText}`}>
+                  {restaurantName}
+                </h1>
+                {/* Bisa tambah tagline opsional di sini */}
+                <span className={`text-xs ${activeTheme.subText}`}>
+                  {language === 'id' ? 'Menu Digital' : 'Digital Menu'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+
+            <div className="flex items-center gap-2">
               <LanguageToggle language={language} onLanguageChange={setLanguage} />
-              <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label={theme === 'light' ? 'Toggle dark mode' : 'Toggle light mode'}
+              {/* Tombol Share sederhana */}
+              <button 
+                onClick={() => navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'))}
+                className={`p-2 rounded-full bg-white/10 hover:bg-white/20 ${activeTheme.headerText}`}
               >
-                {theme === 'light' ? (
-                  <Moon className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <Sun className="w-5 h-5 text-gray-600" />
-                )}
+                <Share2 className="size-5" />
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Category Tabs */}
-      <section className="bg-white border-b border-gray-200 sticky top-[65px] z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-center gap-4 overflow-x-auto scrollbar-hide flex-nowrap sm:flex-wrap">
+      {/* --- CATEGORY TABS --- */}
+      <section className={`sticky top-[68px] z-40 transition-colors duration-300 ${activeTheme.categoryBg}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+          <div className="flex items-center justify-start sm:justify-center gap-3 overflow-x-auto scrollbar-hide">
             {categories.map((category) => {
-  // Jika 'all', pakai terjemahan. Jika tidak, pakai nama kategori aslinya (Kapital di awal)
-  const label = category === 'all' 
-    ? (language === 'id' ? 'Semua' : 'All') 
-    : category.charAt(0).toUpperCase() + category.slice(1); 
+              const label = category === 'all' 
+                ? (language === 'id' ? 'Semua' : 'All') 
+                : category.charAt(0).toUpperCase() + category.slice(1); 
 
-  return (
-    <CategoryChip
-      key={category}
-      label={label}
-      isSelected={selectedCategory === category}
-      onClick={() => setSelectedCategory(category)}
-    />
-  );
-})}
+              return (
+                <CategoryChip
+                  key={category}
+                  label={label}
+                  isSelected={selectedCategory === category}
+                  onClick={() => setSelectedCategory(category)}
+                />
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Menu Items */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 bg-gray-50">
+      {/* --- MENU GRID --- */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24">
         {sortedItems.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">{t('Belum ada menu tersedia', 'No menu items available')}</p>
+          <div className="text-center py-20">
+            <p className={`text-lg ${activeTheme.headerText} opacity-60`}>
+              {t('Belum ada menu tersedia', 'No menu items available')}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {sortedItems.map((item) => {
               const itemName = language === 'id' ? item.name : item.nameEn || item.name;
               const itemDescription =
@@ -145,35 +178,29 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-16">
+      {/* --- FOOTER --- */}
+      <footer className={`transition-colors duration-300 ${activeTheme.footer}`}>
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-white text-xl font-semibold mb-4">{restaurantName}</h3>
+              <h3 className="text-xl font-semibold mb-4">{restaurantName}</h3>
               <div className="flex gap-4">
-                <a
-                  href="#"
-                  className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
-                >
+                <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
                   <Instagram className="w-5 h-5" />
                 </a>
-                <a
-                  href="#"
-                  className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
-                >
+                <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
                   <Facebook className="w-5 h-5" />
                 </a>
               </div>
             </div>
             <div>
               <div className="flex items-start gap-3 mb-3">
-                <Clock className="w-5 h-5 text-amber-400 mt-1" />
+                <Clock className="w-5 h-5 mt-1 opacity-80" />
                 <div>
-                  <p className="text-gray-400 mb-1">
+                  <p className="opacity-70 mb-1 text-sm">
                     {language === 'id' ? 'Jam Operasional' : 'Operational Hours'}
                   </p>
-                  <p className="text-white">
+                  <p className="font-medium">
                     {language === 'id'
                       ? 'Senin - Minggu: 10:00 - 22:00'
                       : 'Monday - Sunday: 10:00 AM - 10:00 PM'}
@@ -183,18 +210,18 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
             </div>
             <div>
               <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-amber-400 mt-1" />
+                <MapPin className="w-5 h-5 mt-1 opacity-80" />
                 <div>
-                  <p className="text-gray-400 mb-1">{language === 'id' ? 'Alamat' : 'Address'}</p>
-                  <p className="text-white">
+                  <p className="opacity-70 mb-1 text-sm">{language === 'id' ? 'Alamat' : 'Address'}</p>
+                  <p className="font-medium">
                     {language === 'id' ? 'Jl. Kuliner Raya No. 123, Jakarta Selatan' : '123 Culinary Street, South Jakarta'}
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 {restaurantName}. All rights reserved.</p>
+          <div className="border-t border-white/10 mt-8 pt-8 text-center opacity-60 text-sm">
+            <p>&copy; 2025 {restaurantName}. Powered by DSAI Kitchen.</p>
           </div>
         </div>
       </footer>

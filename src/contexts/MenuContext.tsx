@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // --- Tipe Data ---
 export interface MenuItem {
@@ -44,7 +44,10 @@ interface MenuContextType {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
-// 🔥 DATA DUMMY GLOBAL (Agar muncul di Builder, Sorter & Public View)
+const STORAGE_KEY_ITEMS = 'menuKu_items'; // Key khusus untuk items
+const STORAGE_KEY_SETTINGS = 'menuKu_settings';
+
+// 🔥 DATA DUMMY DEFAULT
 const DUMMY_MENU_ITEMS: MenuItem[] = [
   {
     id: '1',
@@ -101,59 +104,109 @@ const DUMMY_MENU_ITEMS: MenuItem[] = [
     image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&h=400&fit=crop',
     order: 4,
   },
-  {
-    id: '6',
-    name: 'Pisang Goreng Keju',
-    nameEn: 'Cheese Fried Banana',
-    price: 15000,
-    description: 'Pisang goreng crispy dengan topping keju dan susu',
-    descriptionEn: 'Crispy fried banana topped with cheese and milk',
-    category: 'Dessert',
-    image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=400&h=400&fit=crop',
-    order: 5,
-  },
 ];
 
 export function MenuProvider({ children }: { children: ReactNode }) {
-  // ✅ Langsung isi state dengan DATA DUMMY
+  // 1. State Awal
   const [menuItems, setMenuItems] = useState<MenuItem[]>(DUMMY_MENU_ITEMS);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [settings, setSettings] = useState<MenuSettings>({
     restaurantName: 'DSAI Kitchen',
     restaurantNameEn: 'DSAI Kitchen',
     whatsappNumber: '628123456789',
     template: 'modern',
   });
-
+  const [isLoading, setIsLoading] = useState(true); // Mulai dengan loading true
+  const [error, setError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<Analytics>({
     totalViews: 1250,
-    itemViews: { '1': 450, '2': 300, '5': 200 },
+    itemViews: {},
     lastViewed: new Date().toISOString(),
   });
 
-  // --- FUNGSI CRUD SIMULASI (Hanya update state, tidak ke DB) ---
+  // 2. LOAD DATA (Initial Mount)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Coba load dari LocalStorage
+      const storedItems = localStorage.getItem(STORAGE_KEY_ITEMS);
+      const storedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+
+      if (storedItems) {
+        try {
+          const parsedItems = JSON.parse(storedItems);
+          if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+            setMenuItems(parsedItems);
+          }
+        } catch (e) {
+          console.error("Error parsing menu items", e);
+        }
+      }
+
+      if (storedSettings) {
+        try {
+           setSettings(JSON.parse(storedSettings));
+        } catch (e) {
+           console.error("Error parsing settings", e);
+        }
+      }
+      
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 🔥 3. SYNC ANTAR TAB (Storage Event Listener)
+  // Ini kuncinya! Agar kalau tab Admin update, tab Public ikut update
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY_ITEMS && event.newValue) {
+        console.log("Syncing menu items from another tab...");
+        setMenuItems(JSON.parse(event.newValue));
+      }
+      if (event.key === STORAGE_KEY_SETTINGS && event.newValue) {
+        console.log("Syncing settings from another tab...");
+        setSettings(JSON.parse(event.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+
+  // 4. CRUD Logic (Save to LocalStorage)
+  const saveToStorage = (items: MenuItem[]) => {
+    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
+    // Kita perlu manual trigger event agar tab yang SAMA juga tahu ada update (opsional untuk logic tertentu)
+    // Tapi React state sudah handle tab yg sama.
+  };
 
   const addMenuItem = async (item: Omit<MenuItem, 'id' | 'order'>) => {
     const newItem = { ...item, id: Date.now().toString(), order: menuItems.length };
-    setMenuItems((prev) => [...prev, newItem]);
+    const updated = [...menuItems, newItem];
+    setMenuItems(updated);
+    saveToStorage(updated);
   };
 
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
-    setMenuItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
+    const updated = menuItems.map((item) => (item.id === id ? { ...item, ...updates } : item));
+    setMenuItems(updated);
+    saveToStorage(updated);
   };
 
   const deleteMenuItem = async (id: string) => {
-    setMenuItems((prev) => prev.filter((item) => item.id !== id));
+    const updated = menuItems.filter((item) => item.id !== id);
+    setMenuItems(updated);
+    saveToStorage(updated);
   };
 
   const reorderMenuItems = async (items: MenuItem[]) => {
     setMenuItems(items);
+    saveToStorage(items);
   };
 
   const updateSettings = (updates: Partial<MenuSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updates }));
+    const newSettings = { ...settings, ...updates };
+    setSettings(newSettings);
+    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(newSettings));
   };
 
   const trackView = async (itemId?: string) => {
