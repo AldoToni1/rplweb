@@ -6,7 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { Loader2, AlertCircle, Eye, EyeOff, Menu } from 'lucide-react';
+// ✅ UPDATE: Import Building2 icon, hapus Menu
+import { Loader2, AlertCircle, Eye, EyeOff, Building2 } from 'lucide-react';
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -61,12 +62,13 @@ export function Login({ onSwitchToRegister }: LoginProps) {
           {/* Logo */}
           <div className="flex justify-center mb-4">
             <div className="bg-gradient-to-br from-orange-500 to-yellow-500 p-3 rounded-lg shadow-lg">
-              <Menu className="size-8 text-white" />
+              {/* ✅ UPDATE: Mengganti icon Menu dengan Building2 */}
+              <Building2 className="size-8 text-white" />
             </div>
           </div>
 
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
-            MenuKu Digital
+            DSAI Kitchen
           </CardTitle>
           <CardDescription className="text-base text-gray-600">Masuk ke akun Anda untuk mengelola menu</CardDescription>
         </CardHeader>

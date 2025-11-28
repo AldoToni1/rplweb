@@ -126,8 +126,9 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
 
       {/* --- CATEGORY TABS --- */}
       <section className={`sticky top-[68px] z-40 transition-colors duration-300 ${activeTheme.categoryBg}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-start sm:justify-center gap-3 overflow-x-auto scrollbar-hide">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          {/* ✅ KEMBALIKAN LAYOUT SEBELUMNYA: Rata Tengah & Gap Lebih Besar */}
+          <div className="flex items-center justify-center gap-4 overflow-x-auto scrollbar-hide flex-nowrap sm:flex-wrap">
             {categories.map((category) => {
               const label = category === 'all' 
                 ? (language === 'id' ? 'Semua' : 'All') 
@@ -155,7 +156,8 @@ export function PublicMenu({ onBack }: { onBack?: () => void }) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          // ✅ KEMBALIKAN LAYOUT SEBELUMNYA: Jarak antar kartu & items-start
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
             {sortedItems.map((item) => {
               const itemName = language === 'id' ? item.name : item.nameEn || item.name;
               const itemDescription =
