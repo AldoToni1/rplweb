@@ -1,8 +1,7 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getAllMenus, createMenu, updateMenu, deleteMenu } from '../lib/services/menuService';
-import { getAnalyticsSummary, trackOverallView, trackMenuView } from '../lib/services/analyticsService';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+// --- Tipe Data ---
 export interface MenuItem {
   id: string;
   name: string;
@@ -13,7 +12,7 @@ export interface MenuItem {
   category: string;
   image?: string;
   order: number;
-   template?: string; // ✅ ganti theme → template
+  template?: string;
 }
 
 export interface MenuSettings {
@@ -21,6 +20,9 @@ export interface MenuSettings {
   restaurantNameEn?: string;
   whatsappNumber: string;
   template: 'minimalist' | 'colorful' | 'elegant' | 'modern';
+  // Field tambahan untuk kompatibilitas dengan kode UI lama
+  openHours?: string;
+  address?: ReactNode;
 }
 
 interface Analytics {
@@ -45,200 +47,152 @@ interface MenuContextType {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
-const STORAGE_KEYS = {
-  MENU_ITEMS: 'menuKu_items',
-  SETTINGS: 'menuKu_settings',
-  ANALYTICS: 'menuKu_analytics',
-};
+// 🔥 KUNCI PENYIMPANAN (PENTING: Harus sama di seluruh aplikasi)
+const STORAGE_KEY_ITEMS = 'menuKu_items';
+const STORAGE_KEY_SETTINGS = 'menuKu_settings';
+
+// DATA DUMMY DEFAULT (Hanya muncul jika LocalStorage kosong)
+const DUMMY_MENU_ITEMS: MenuItem[] = [
+  {
+    id: '1',
+    name: 'Nasi Goreng Spesial',
+    nameEn: 'Special Fried Rice',
+    price: 25000,
+    description: 'Nasi goreng dengan telur, ayam suwir, dan kerupuk',
+    descriptionEn: 'Fried rice with egg, shredded chicken, and crackers',
+    category: 'Makanan Utama',
+    image: 'https://images.unsplash.com/photo-1603133872878-684f571d70f2?w=400&h=400&fit=crop',
+    order: 0,
+  },
+  {
+    id: '2',
+    name: 'Mie Ayam Bakso',
+    nameEn: 'Chicken Noodle with Meatball',
+    price: 18000,
+    description: 'Mie ayam jamur dengan tambahan bakso sapi asli',
+    descriptionEn: 'Mushroom chicken noodles with real beef meatballs',
+    category: 'Makanan Utama',
+    image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=400&fit=crop',
+    order: 1,
+  },
+  {
+    id: '3',
+    name: 'Es Teh Manis',
+    nameEn: 'Sweet Iced Tea',
+    price: 5000,
+    description: 'Teh manis dingin segar',
+    descriptionEn: 'Fresh sweet iced tea',
+    category: 'Minuman',
+    image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop',
+    order: 2,
+  },
+  {
+    id: '4',
+    name: 'Sate Ayam Madura',
+    nameEn: 'Chicken Satay',
+    price: 30000,
+    description: '10 tusuk sate ayam dengan bumbu kacang khas Madura',
+    descriptionEn: '10 skewers of chicken satay with Madura peanut sauce',
+    category: 'Makanan Utama',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop',
+    order: 3,
+  },
+];
 
 export function MenuProvider({ children }: { children: ReactNode }) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // 1. INITIALIZE: Cek LocalStorage dulu, kalau kosong baru pakai DUMMY
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_ITEMS);
+      // Jika ada data tersimpan, pakai itu. Jika tidak, pakai DUMMY.
+      return saved ? JSON.parse(saved) : DUMMY_MENU_ITEMS;
+    }
+    return DUMMY_MENU_ITEMS;
+  });
 
   const [settings, setSettings] = useState<MenuSettings>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return stored
-      ? JSON.parse(stored)
-      : {
-          restaurantName: 'Rumah Makan Saya',
-          restaurantNameEn: 'My Restaurant',
-          whatsappNumber: '6281227281923',
-          template: 'minimalist',
-        };
-  });
-
-  const [analytics, setAnalytics] = useState<Analytics>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.ANALYTICS);
-    return stored
-      ? JSON.parse(stored)
-      : {
-          totalViews: 0,
-          itemViews: {},
-          lastViewed: new Date().toISOString(),
-        };
-  });
-
-  // Load initial data from Supabase
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Load menus from Supabase
-        const menus = await getAllMenus();
-        setMenuItems(menus.sort((a, b) => a.order - b.order));
-        // setMenuItems(menus);
-
-        // Load analytics from Supabase
-        const analyticsSummary = await getAnalyticsSummary();
-        setAnalytics({
-          totalViews: analyticsSummary.totalViews,
-          itemViews: analyticsSummary.itemViews,
-          lastViewed: new Date().toISOString(),
-        });
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError('Failed to load menu data');
-        // Fallback to localStorage if Supabase fails
-        const stored = localStorage.getItem(STORAGE_KEYS.MENU_ITEMS);
-        if (stored) {
-          setMenuItems(JSON.parse(stored));
-        }
-      } finally {
-        setIsLoading(false);
-      }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
+      return saved
+        ? JSON.parse(saved)
+        : {
+            restaurantName: 'DSAI Kitchen',
+            restaurantNameEn: 'DSAI Kitchen',
+            whatsappNumber: '628123456789',
+            template: 'modern',
+            openHours: '10:00 - 22:00',
+            address: 'Jl. Contoh No. 123, Jakarta',
+          };
+    }
+    return {
+      restaurantName: 'DSAI Kitchen',
+      restaurantNameEn: 'DSAI Kitchen',
+      whatsappNumber: '628123456789',
+      template: 'modern',
+      openHours: '10:00 - 22:00',
+      address: 'Jl. Contoh No. 123, Jakarta',
     };
+  });
 
-    loadData();
-  }, []);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics>({
+    totalViews: 1250,
+    itemViews: {},
+    lastViewed: new Date().toISOString(),
+  });
+
+  // 2. AUTO-SAVE: Setiap kali menu/settings berubah, simpan ke LocalStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(menuItems));
+  }, [menuItems]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
   }, [settings]);
 
+  // 3. SYNC ANTAR TAB: Biar Admin & Public View nyambung real-time
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY_ITEMS && event.newValue) {
+        console.log('Syncing items from other tab...');
+        setMenuItems(JSON.parse(event.newValue));
+      }
+      if (event.key === STORAGE_KEY_SETTINGS && event.newValue) {
+        console.log('Syncing settings from other tab...');
+        setSettings(JSON.parse(event.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // --- CRUD ACTIONS (Modifikasi State) ---
+
   const addMenuItem = async (item: Omit<MenuItem, 'id' | 'order'>) => {
-    try {
-      setError(null);
-      const newItem = await createMenu(item);
-      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
-      setMenuItems((prevItems) => {
-        const updatedItems = [...prevItems, newItem];
-        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(updatedItems));
-        return updatedItems;
-      });
-    } catch (err) {
-      console.error('Error adding menu item:', err);
-      setError('Failed to add menu item');
-      throw err;
-    }
+    const newItem = { ...item, id: Date.now().toString(), order: menuItems.length };
+    setMenuItems((prev) => [...prev, newItem]);
   };
 
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
-    try {
-      setError(null);
-      const updated = await updateMenu(id, updates);
-      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
-      setMenuItems((prevItems) => {
-        const newItems = prevItems.map((item) => (item.id === id ? updated : item));
-        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
-        return newItems;
-      });
-    } catch (err) {
-      console.error('Error updating menu item:', err);
-      setError('Failed to update menu item');
-      throw err;
-    }
+    setMenuItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
   };
 
   const deleteMenuItem = async (id: string) => {
-    try {
-      setError(null);
-      await deleteMenu(id);
-      // Menggunakan functional update untuk memastikan kita selalu menggunakan nilai state terbaru
-      setMenuItems((prevItems) => {
-        const newItems = prevItems.filter((item) => item.id !== id);
-        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(newItems));
-        return newItems;
-      });
-    } catch (err) {
-      console.error('Error deleting menu item:', err);
-      setError('Failed to delete menu item');
-      throw err;
-    }
+    setMenuItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Di dalam MenuContext.tsx
-
-const reorderMenuItems = async (items: MenuItem[]) => {
-  try {
-    setError(null);
-    // Update state lokal dulu biar UI responsif
-    const reordered = items.map((item, index) => ({ ...item, order: index }));
-    setMenuItems(reordered);
-    localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
-
-    // 👇 Update database
-    // Jika 'updateMenu' protes soal tipe, kita cast ke 'any' dulu untuk fix cepat
-    await Promise.all(
-      reordered.map((item) => 
-        updateMenu(item.id, { order: item.order } as any) 
-      )
-    );
-  } catch (err) {
-    console.error('Error reordering menu items:', err);
-    setError('Failed to reorder menu items');
-    // Opsional: kembalikan state jika gagal (rollback)
-    throw err;
-  }
-};
-
-  // const reorderMenuItems = async (items: MenuItem[]) => {
-  //   try {
-  //     setError(null);
-  //     const reordered = items.map((item, index) => ({ ...item, order: index }));
-  //     setMenuItems(reordered);
-  //     localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(reordered));
-
-  //     // Update order in Supabase
-  //     await Promise.all(reordered.map((item) => updateMenu(item.id, { order: item.order })));
-  //   } catch (err) {
-  //     console.error('Error reordering menu items:', err);
-  //     setError('Failed to reorder menu items');
-  //     throw err;
-  //   }
-  // };
+  const reorderMenuItems = async (items: MenuItem[]) => {
+    // Update state lokal. Karena ada useEffect di atas, ini otomatis tersimpan ke LocalStorage
+    setMenuItems(items);
+  };
 
   const updateSettings = (updates: Partial<MenuSettings>) => {
-    setSettings({ ...settings, ...updates });
+    setSettings((prev) => ({ ...prev, ...updates }));
   };
 
   const trackView = async (itemId?: string) => {
-    try {
-      setAnalytics((prev) => {
-        const newAnalytics = {
-          totalViews: prev.totalViews + 1,
-          itemViews: { ...prev.itemViews },
-          lastViewed: new Date().toISOString(),
-        };
-
-        if (itemId) {
-          newAnalytics.itemViews[itemId] = (prev.itemViews[itemId] || 0) + 1;
-        }
-
-        return newAnalytics;
-      });
-
-      // Track in Supabase
-      if (itemId) {
-        await trackMenuView(itemId);
-      } else {
-        await trackOverallView();
-      }
-    } catch (err) {
-      console.error('Error tracking view:', err);
-    }
+    console.log('View tracked:', itemId || 'Overall');
   };
 
   return (
@@ -269,43 +223,3 @@ export function useMenu() {
   }
   return context;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
