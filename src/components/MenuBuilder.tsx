@@ -1,5 +1,5 @@
-"use client";
-import React, { useState } from 'react';
+'use client';
+import React, { useState, forwardRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -43,81 +43,96 @@ interface MenuItemFormData {
 }
 
 // --- Komponen Kartu Menu yang Bisa Di-Drag ---
-function SortableMenuItem({ item, onEdit, onDelete }: { item: MenuItem; onEdit: () => void; onDelete: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+const SortableMenuItem = forwardRef<HTMLDivElement, { item: MenuItem; onEdit: () => void; onDelete: () => void }>(
+  ({ item, onEdit, onDelete }, ref) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto',
-    position: 'relative' as 'relative', // Casting tipe eksplisit
-  };
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 50 : 'auto',
+      position: 'relative' as 'relative',
+    };
 
-  return (
-    <Card ref={setNodeRef} style={style} className={`p-4 relative ${isDragging ? 'border-orange-400 shadow-lg' : ''}`}>
-      <div className="flex items-start gap-4">
-        {/* Handle Drag */}
-        <button 
-          className="mt-2 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 p-1 hover:bg-gray-100 rounded" 
-          {...attributes} 
-          {...listeners}
-        >
-          <GripVertical className="size-5 text-gray-400" />
-        </button>
+    const combinedRef = (node: HTMLDivElement) => {
+      setNodeRef(node);
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    };
 
-        {item.image && (
-          <div className="flex-shrink-0">
-            <ImageWithFallback 
-              src={item.image} 
-              alt={item.name} 
-              className="w-20 h-20 object-cover rounded-lg border border-gray-200" 
-            />
-          </div>
-        )}
+    return (
+      <Card
+        ref={combinedRef}
+        style={style}
+        className={`p-4 relative ${isDragging ? 'border-orange-400 shadow-lg' : ''}`}
+      >
+        <div className="flex items-start gap-4">
+          {/* Handle Drag */}
+          <button
+            className="mt-2 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 p-1 hover:bg-gray-100 rounded"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-5 text-gray-400" />
+          </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
-              {item.nameEn && <p className="text-sm text-gray-500 truncate">{item.nameEn}</p>}
-              <p className="text-orange-600 font-semibold mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+          {item.image && (
+            <div className="flex-shrink-0">
+              <ImageWithFallback
+                src={item.image}
+                alt={item.name}
+                className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+              />
             </div>
-            <div className="flex gap-2 flex-shrink-0">
-              <Button variant="outline" size="sm" onClick={onEdit}>
-                <Pencil className="size-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={onDelete}>
-                <Trash2 className="size-4 text-red-500" />
-              </Button>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
+                {item.nameEn && <p className="text-sm text-gray-500 truncate">{item.nameEn}</p>}
+                <p className="text-orange-600 font-semibold mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button variant="outline" size="sm" onClick={onEdit}>
+                  <Pencil className="size-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={onDelete}>
+                  <Trash2 className="size-4 text-red-500" />
+                </Button>
+              </div>
             </div>
-          </div>
-          <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.description}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded font-medium">
-              {item.category}
-            </span>
-            <span className="text-xs text-gray-400">
-              Urutan: {item.order + 1}
-            </span>
+            <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.description}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded font-medium">
+                {item.category}
+              </span>
+              <span className="text-xs text-gray-400">Urutan: {item.order + 1}</span>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
-  );
-}
+      </Card>
+    );
+  }
+);
+
+SortableMenuItem.displayName = 'SortableMenuItem';
 
 // --- Komponen Utama MenuBuilder ---
 export function MenuBuilder() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, reorderMenuItems, isLoading, error } = useMenu();
-  
+
   // State Lokal
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false); // State untuk sync
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<MenuItemFormData>({
     name: '',
     nameEn: '',
@@ -149,7 +164,7 @@ export function MenuBuilder() {
   // --- HANDLER: Sinkronisasi Lokal ke Cloud ---
   const handleSync = async () => {
     if (!confirm('Upload semua menu lokal ke database Cloud? Pastikan Anda sudah login.')) return;
-    
+
     setIsSyncing(true);
     try {
       const localDataString = localStorage.getItem('menuKu_items');
@@ -157,18 +172,18 @@ export function MenuBuilder() {
         toast.error('Tidak ada data lokal ditemukan!');
         return;
       }
-      
+
       const localItems = JSON.parse(localDataString);
       if (!Array.isArray(localItems) || localItems.length === 0) {
-         toast.error('Data lokal kosong.');
-         return;
+        toast.error('Data lokal kosong.');
+        return;
       }
 
       let count = 0;
       for (const item of localItems) {
         const { id, order, ...itemData } = item; // Buang ID lama
         itemData.price = Number(itemData.price);
-        await addMenuItem(itemData); 
+        await addMenuItem(itemData);
         count++;
       }
 
@@ -284,7 +299,7 @@ export function MenuBuilder() {
     if (over && active.id !== over.id) {
       const oldIndex = sortedMenuItems.findIndex((item) => item.id === active.id);
       const newIndex = sortedMenuItems.findIndex((item) => item.id === over.id);
-      
+
       // Buat array baru dengan urutan baru
       const reordered = arrayMove(sortedMenuItems, oldIndex, newIndex);
 
@@ -305,12 +320,12 @@ export function MenuBuilder() {
             <p className="text-sm text-gray-600 mt-1">Kelola dan atur urutan menu Anda di sini</p>
             {error && <p className="text-sm text-red-600 mt-2">Error: {error}</p>}
           </div>
-          
+
           <div className="flex gap-2 w-full sm:w-auto">
             {/* Tombol Sync */}
-            <Button 
-              variant="outline" 
-              onClick={handleSync} 
+            <Button
+              variant="outline"
+              onClick={handleSync}
               disabled={isSyncing || isLoading}
               className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 flex-1 sm:flex-none"
             >
@@ -453,7 +468,14 @@ export function MenuBuilder() {
 
                   {/* Tombol Aksi Form */}
                   <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        resetForm();
+                      }}
+                    >
                       Batal
                     </Button>
                     <Button type="submit" disabled={isSaving}>

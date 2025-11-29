@@ -41,6 +41,8 @@ export function MenuCard({ item, language = 'id', themeColor }: MenuCardProps) {
   };
 
   const handleAddToCart = () => {
+    // Track saat user tambah ke keranjang
+    trackView(item.id, displayName);
     addToCart({
       id: item.id,
       name: displayName,
@@ -58,6 +60,8 @@ export function MenuCard({ item, language = 'id', themeColor }: MenuCardProps) {
   };
 
   const handleIncrement = () => {
+    // Track saat user tambah quantity
+    trackView(item.id, displayName);
     if (currentQuantity === 0) {
       addToCart({
         id: item.id,

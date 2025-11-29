@@ -175,12 +175,32 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   });
 
   // 2. AUTO-SAVE: Setiap kali menu/settings berubah, simpan ke LocalStorage
+  // Filter out base64 images to prevent quota exceeded errors
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(menuItems));
+    try {
+      const menuItemsWithoutBase64 = menuItems.map((item) => ({
+        ...item,
+        // Hapus base64 data URLs, keep valid Supabase Storage URLs
+        image: item.image && !item.image.startsWith('data:') ? item.image : undefined,
+      }));
+      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(menuItemsWithoutBase64));
+    } catch (err) {
+      if (err instanceof DOMException && err.code === 22) {
+        console.error('❌ localStorage quota exceeded, attempting cleanup...');
+        // Clear old data to make space
+        localStorage.removeItem(STORAGE_KEY_ITEMS);
+        localStorage.removeItem(STORAGE_KEY_SETTINGS);
+        localStorage.removeItem('menuKu_analytics');
+      }
+    }
   }, [menuItems]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+    try {
+      localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    }
   }, [settings]);
 
   // 3. SYNC ANTAR TAB: Biar Admin & Public View nyambung real-time
